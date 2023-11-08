@@ -10,14 +10,9 @@ public class PlaceableObject : MonoBehaviour
     private void Start()
     {
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
-            xSize = meshRenderer.bounds.size.x;
-            ySize = meshRenderer.bounds.size.y;
-            zSize = meshRenderer.bounds.size.z;
-    }
-
-    public void PlaceOnObject(float x, float y, float z, float otherObjectWidth, float otherObjectHeight)
-    {
-        Place(x - otherObjectWidth / 2, y - otherObjectHeight / 2, z);
+        xSize = meshRenderer.bounds.size.x;
+        ySize = meshRenderer.bounds.size.y;
+        zSize = meshRenderer.bounds.size.z;
     }
 
     public void Place(float x, float y, float z)
@@ -25,7 +20,8 @@ public class PlaceableObject : MonoBehaviour
         float xPosition = x + xSize / 2;
         float yPosition = y + ySize / 2;
         float zPosition = z + zSize / 2;
-        transform.position = new Vector3(xPosition, yPosition, z);
+        
+        transform.position = new Vector3(xPosition + GetXOffset(), yPosition + GetYOffset(), zPosition + GetZOffset());
     }
     
     // Constants
@@ -38,11 +34,27 @@ public class PlaceableObject : MonoBehaviour
     public float GetZSize() { return zSize; }
     
     // Calculated
-    public float GetXEndEdge() { return GetX() + xSize / 2; }
-    public float GetYEndEdge() { return GetY() + ySize / 2; }
-    public float GetZEndEdge() { return GetZ() + zSize / 2; }
+    public float GetXEndEdge() { return GetX() - xSize / 2; }
+    public float GetYEndEdge() { return GetY() - ySize / 2; }
+    public float GetZEndEdge() { return GetZ() - zSize / 2; }
     
-    public float GetXBeginningEdge() { return GetX() - xSize / 2; }
-    public float GetYBeginningEdge() { return GetY() - ySize / 2; }
-    public float GetZBeginningEdge() { return GetZ() - zSize / 2; }
+    public float GetXBeginningEdge() { return GetX() + xSize / 2; }
+    public float GetYBeginningEdge() { return GetY() + ySize / 2; }
+    public float GetZBeginningEdge() { return GetZ() + zSize / 2; }
+    
+    public float GetXOffset() { return GetOffset().x; }
+    public float GetYOffset() { return GetOffset().y; }
+    public float GetZOffset() { return GetOffset().z; }
+    
+    public Vector3 GetOffset()
+    {
+        Vector3 rotatedPosition = transform.position;
+        Quaternion tempRotation = transform.rotation;
+        transform.rotation = Quaternion.identity;
+        Vector3 nonRotatedPosition = transform.position;
+        transform.rotation = tempRotation;
+
+        return nonRotatedPosition - rotatedPosition;
+    }
+    
 }

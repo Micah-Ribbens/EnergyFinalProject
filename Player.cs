@@ -33,18 +33,29 @@ public class Player : PlaceableObject
     private int jumpsLeft;
     private float playerSpeed = 10f;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        jumpsLeft = maxJumps;
-        physicsEquation = new PhysicsEquation(jumpHeight, timeToVertex, 0);
-        controller = GetComponent<CharacterController>();
-        playerJumpVelocity = (float) physicsEquation.velocity;
-    }
+    private bool k = false;
 
     // Update is called once per frame
     void Update()
     {
+        if (!k)
+        {
+            jumpsLeft = maxJumps;
+            physicsEquation = new PhysicsEquation(jumpHeight, timeToVertex, 0);
+            controller = GetComponent<CharacterController>();
+            playerJumpVelocity = (float) physicsEquation.velocity;
+            
+            BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
+            boxCollider.isTrigger = true;
+            boxCollider.size = new Vector3(GetXSize(), GetYSize(), GetZSize());
+        
+            // Debug.Log("y " + GetYSize());
+            // Debug.Log("x " + GetXSize());
+            // Debug.Log("z " + GetZSize());
+        
+            boxCollider.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
+            k = true;
+        }
         isGrounded = controller.isGrounded;
         
         // Movement of player
