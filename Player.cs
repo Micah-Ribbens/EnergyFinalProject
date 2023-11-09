@@ -49,10 +49,6 @@ public class Player : PlaceableObject
             boxCollider.isTrigger = true;
             boxCollider.size = new Vector3(GetXSize(), GetYSize(), GetZSize());
         
-            // Debug.Log("y " + GetYSize());
-            // Debug.Log("x " + GetXSize());
-            // Debug.Log("z " + GetZSize());
-        
             boxCollider.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
             k = true;
         }

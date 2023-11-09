@@ -41,8 +41,8 @@ public class Grid
             tempColumns = GetGridDimension(tempRows, numberOfItems);
         }
 
-        float itemHeight = GetItemDimension(dimension.zSize, tempRows, itemMaxZSize, zBuffer);
-        float itemWidth = GetItemDimension(dimension.xSize, tempColumns, itemMaxXSize, xBuffer);
+        float itemHeight = GetItemDimension(dimension.zSize, tempRows, zBuffer);
+        float itemWidth = GetItemDimension(dimension.xSize, tempColumns, xBuffer);
         
         float baseLeftEdge = goesLeftToRight ? dimension.xStartEdge : dimension.xEndEdge;
         float baseTopEdge = goesTopToBottom ? dimension.xStartEdge : dimension.xEndEdge - itemWidth;
@@ -63,18 +63,18 @@ public class Grid
         return (int) Math.Ceiling(otherDimension / numberOfItems);
     }
 
-    public float GetItemDimension(float gridDimensionSize, float gridDimension, float itemDimensionMax,
+    public float GetItemDimension(float gridDimensionSize, float gridDimension, 
         float bufferBetweenItems)
     {
         float remainingDimension = gridDimensionSize - bufferBetweenItems * (gridDimension - 1);
 
         float itemDimension = remainingDimension / gridDimension;
 
-        if (itemDimensionMax != -1 && itemDimension > itemDimensionMax)
-        {
-            itemDimension = itemDimensionMax;
-
-        }
+        // if (itemDimensionMax != -1 && itemDimension > itemDimensionMax)
+        // {
+        //     itemDimension = itemDimensionMax;
+        //
+        // }
         return itemDimension;
     }
 
