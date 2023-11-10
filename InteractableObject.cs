@@ -21,13 +21,13 @@ public class InteractableObject : PlaceableObject
 
     private void Instantiate()
     {
-        // BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
-        // boxCollider.isTrigger = true;
-        // PlaceableObject player = GameObject.Find("Player").GetComponent<PlaceableObject>();
-        // distanceNeeded = playerDistanceBeforeInteractable * player.GetXSize();
+        BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
+        boxCollider.isTrigger = true;
+        PlaceableObject player = GameObject.Find("Player").GetComponent<PlaceableObject>();
+        distanceNeeded = playerDistanceBeforeInteractable;
         
         // TODO fixing the box collider code. How do I set the center and make it work correctly?
-        // boxCollider.size = new Vector3(boxCollider.size.x + distanceNeeded, boxCollider.size.y + distanceNeeded, boxCollider.size.z + distanceNeeded);
+        boxCollider.size = new Vector3(boxCollider.size.x + distanceNeeded, boxCollider.size.y + distanceNeeded, boxCollider.size.z + distanceNeeded);
         // Vector3 position = boxCollider.transform.position;
         // boxCollider.transform.position = new Vector3(position.x + distanceNeeded / 2, position.y + distanceNeeded / 2, position.z + distanceNeeded / 2);
     }

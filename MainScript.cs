@@ -9,6 +9,8 @@ public class MainScript : MonoBehaviour
     private InteractableObject enemyHouse;
     private PlaceableObject playerHouse;
     private PlaceableObject land;
+    private PlaceableObject bed;
+    public GameObject container;
     
     // Constant Variables (Objects)
     private GameObject enemy;
@@ -19,11 +21,12 @@ public class MainScript : MonoBehaviour
     public GameObject popup;
     public GameObject plantPrefab;
     public GameObject bulletPrefab;
+    public GameObject cowPrefab;
     
     // Data Management
     private Dictionary<string, string> tagOptions = new Dictionary<string, string>();
     private PlaceableObject[] plants;
-    private PlaceableObject enemyPlacableObject;
+    private PlaceableObject[] cows;
         
     // Other
     private bool hasCalledInitialization = false;
@@ -32,6 +35,13 @@ public class MainScript : MonoBehaviour
     // Modifiable Values
     private float timeBeforeShooting = 2f;
     
+    // Calculated Constant Factors Off By
+    private float playerHouseYOffBy = 1.1f;
+    private float enemyHouseYOffBy = -0.975f;
+    private float plantYOffBy = -0.284f;
+    private float cowYOffBy = 0.05f;
+    private float bedYOffBy = -.316f;
+    
     private void Start()
     {
         // Grabbing variables from Unity Hub
@@ -39,21 +49,27 @@ public class MainScript : MonoBehaviour
         playerHouse = GameObject.Find("PlayerHouse").GetComponent<PlaceableObject>();
         land = GameObject.Find("Land").GetComponent<PlaceableObject>();
         enemy = GameObject.Find("Enemy");
-        enemyPlacableObject = enemy.GetComponent<PlaceableObject>();
         player = GameObject.Find("Player");
+        bed = GameObject.Find("Bed").GetComponent<PlaceableObject>();
         
-        Debug.Log("x " + enemyHouse.GetX() + " y " + enemyHouse.GetY() + " z " + enemyHouse.GetZ());
-
+        timeWhenEnemyShoots = Time.time + timeBeforeShooting;
         popup.SetActive(false);
         
+        // Instantiate Grids
         plants = new PlaceableObject[15];
         for (int i = 0; i < plants.Length; i++)
         {
             plants[i] = Instantiate(plantPrefab, transform.position, Quaternion.identity).GetComponent<PlaceableObject>();
+            plants[i].transform.parent = container.transform;
         }
 
-        timeWhenEnemyShoots = Time.time + timeBeforeShooting;
-
+        
+        cows = new PlaceableObject[15];
+        for (int i = 0; i < cows.Length; i++)
+        {
+            cows[i] = Instantiate(cowPrefab, transform.position, Quaternion.identity).GetComponent<PlaceableObject>();
+            cows[i].transform.parent = container.transform;
+        }
     }
 
     private void Update()
@@ -88,6 +104,9 @@ public class MainScript : MonoBehaviour
             Vector3 bulletRotation = enemy.transform.eulerAngles + bulletPrefab.transform.eulerAngles;
             GameObject bullet1 = Instantiate(bulletPrefab, enemyCannonLeft.transform.position, Quaternion.Euler(bulletRotation));
             GameObject bullet2 = Instantiate(bulletPrefab, enemyCannonRight.transform.position, Quaternion.Euler(bulletRotation));
+
+            bullet1.transform.parent = container.transform;
+            bullet2.transform.parent = container.transform;
             
             bullet1.GetComponent<Bullet>().SetMovementVector(movementVector);
             bullet2.GetComponent<Bullet>().SetMovementVector(movementVector);
@@ -99,16 +118,22 @@ public class MainScript : MonoBehaviour
 
     private void Initialize()
     {
-        // enemyHouse.SetActions(() => TriggerEnterAction(enemyHouse.gameObject), () => TriggerExitAction(enemyHouse.gameObject));
-        enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge(), enemyHouse.GetZBeginningEdge());
-        playerHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge(), enemyHouse.GetZBeginningEdge());
+        enemyHouse.SetActions(() => TriggerEnterAction(enemyHouse.gameObject), () => TriggerExitAction(enemyHouse.gameObject));
+        enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + enemyHouseYOffBy, enemyHouse.GetZBeginningEdge());
+        playerHouse.Place(playerHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + playerHouseYOffBy, playerHouse.GetZBeginningEdge());
+        bed.Place(bed.GetXBeginningEdge(), land.GetYBeginningEdge() + bedYOffBy, bed.GetZBeginningEdge());
         
         PlaceableObject plant = plants[0];
         
         int rows = 5;
         int columns = 3;
         Grid grid = new Grid(new Dimension(0f, 0f, plant.GetXSize() * columns * 2, plant.GetZSize() * rows * 2), 5, 3);
-        grid.TurnIntoGrid(plants, plant.GetXSize(), plant.GetZSize(), land.GetYBeginningEdge());
+        grid.TurnIntoGrid(plants, plant.GetXSize(), plant.GetZSize(), land.GetYBeginningEdge() + plantYOffBy);
+
+        PlaceableObject cow = cows[0];
+        
+        grid = new Grid(new Dimension(30f, 30f, cow.GetXSize() * columns * 2, cow.GetZSize() * rows * 2), 5, 3);
+        grid.TurnIntoGrid(cows, cow.GetXSize(), cow.GetZSize(), land.GetYBeginningEdge() + cowYOffBy);
     }
 
     private void TriggerEnterAction(GameObject gameObject)
@@ -125,8 +150,8 @@ public class MainScript : MonoBehaviour
         {
             if (gameObject.CompareTag(key))
             {
-                // text.text = tagOptions.GetValueOrDefault(key, "");
-                // popup.SetActive(true);
+                text.text = tagOptions.GetValueOrDefault(key, "");
+                popup.SetActive(true);
                 break;
             }
         }
