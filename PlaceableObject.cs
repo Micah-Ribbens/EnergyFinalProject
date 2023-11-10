@@ -1,7 +1,6 @@
 ﻿using System;
 using UnityEngine;
 
-// TODO how to not make rotation mess up all the calculations!
 public class PlaceableObject : MonoBehaviour
 {
     private float xSize;

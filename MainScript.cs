@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class MainScript : MonoBehaviour
 {
@@ -25,8 +27,13 @@ public class MainScript : MonoBehaviour
     
     // Data Management
     private Dictionary<string, string> tagOptions = new Dictionary<string, string>();
-    private PlaceableObject[] plants;
-    private PlaceableObject[] cows;
+    private Dictionary<string, Action> tagToAction = new Dictionary<string, Action>();
+    private InteractableObject[] plants;
+    private InteractableObject[] cows;
+    private float playerMoney = Constants.PLAYER_START_MONEY;
+    private float enemyMoney = Constants.ENEMY_START_MONEY;
+    private Action onHarvestAction;
+    private Action onOptionBAction;
         
     // Other
     private bool hasCalledInitialization = false;
@@ -42,6 +49,10 @@ public class MainScript : MonoBehaviour
     private float cowYOffBy = 0.05f;
     private float bedYOffBy = -.316f;
     
+    // Grid Logic
+    private bool needsToCallGridMethod = false;  // Whether the grid objects have beeen created and grid.turnIntoGrid() was never called
+    
+    
     private void Start()
     {
         // Grabbing variables from Unity Hub
@@ -54,22 +65,7 @@ public class MainScript : MonoBehaviour
         
         timeWhenEnemyShoots = Time.time + timeBeforeShooting;
         popup.SetActive(false);
-        
-        // Instantiate Grids
-        plants = new PlaceableObject[15];
-        for (int i = 0; i < plants.Length; i++)
-        {
-            plants[i] = Instantiate(plantPrefab, transform.position, Quaternion.identity).GetComponent<PlaceableObject>();
-            plants[i].transform.parent = container.transform;
-        }
-
-        
-        cows = new PlaceableObject[15];
-        for (int i = 0; i < cows.Length; i++)
-        {
-            cows[i] = Instantiate(cowPrefab, transform.position, Quaternion.identity).GetComponent<PlaceableObject>();
-            cows[i].transform.parent = container.transform;
-        }
+        InstantiateGrids();
     }
 
     private void Update()
@@ -79,8 +75,16 @@ public class MainScript : MonoBehaviour
             Initialize();
             hasCalledInitialization = true;
         }
-        
-        // Moving enemy
+
+        if (needsToCallGridMethod)
+        {
+            PutIntoGrids();
+        }
+        runEnemyLogic();
+    }
+
+    private void runEnemyLogic()
+    {
         Vector3 playerPosition = player.transform.position;
         Vector3 enemyPosition = enemy.transform.position;
         Vector3 movementVector = new Vector3(playerPosition.x - enemyPosition.x, 0, playerPosition.z - enemyPosition.z);
@@ -94,7 +98,7 @@ public class MainScript : MonoBehaviour
             
             double yRotation = Math.Atan2(movementVector.x, movementVector.z) * 180.0 / Math.PI;
             enemy.transform.eulerAngles = new Vector3(enemy.transform.eulerAngles.x,
-             (float) yRotation + 90f, enemy.transform.eulerAngles.z);
+                (float) yRotation + 90f, enemy.transform.eulerAngles.z);
         }
 
         if (timeWhenEnemyShoots <= Time.time)
@@ -118,40 +122,34 @@ public class MainScript : MonoBehaviour
 
     private void Initialize()
     {
-        enemyHouse.SetActions(() => TriggerEnterAction(enemyHouse.gameObject), () => TriggerExitAction(enemyHouse.gameObject));
+        enemyHouse.SetActions(() => TriggerEnterAction(enemyHouse), () => TriggerExitAction(enemyHouse.gameObject));
         enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + enemyHouseYOffBy, enemyHouse.GetZBeginningEdge());
         playerHouse.Place(playerHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + playerHouseYOffBy, playerHouse.GetZBeginningEdge());
         bed.Place(bed.GetXBeginningEdge(), land.GetYBeginningEdge() + bedYOffBy, bed.GetZBeginningEdge());
-        
-        PlaceableObject plant = plants[0];
-        
-        int rows = 5;
-        int columns = 3;
-        Grid grid = new Grid(new Dimension(0f, 0f, plant.GetXSize() * columns * 2, plant.GetZSize() * rows * 2), 5, 3);
-        grid.TurnIntoGrid(plants, plant.GetXSize(), plant.GetZSize(), land.GetYBeginningEdge() + plantYOffBy);
-
-        PlaceableObject cow = cows[0];
-        
-        grid = new Grid(new Dimension(30f, 30f, cow.GetXSize() * columns * 2, cow.GetZSize() * rows * 2), 5, 3);
-        grid.TurnIntoGrid(cows, cow.GetXSize(), cow.GetZSize(), land.GetYBeginningEdge() + cowYOffBy);
     }
 
-    private void TriggerEnterAction(GameObject gameObject)
+    private void TriggerEnterAction(InteractableObject interactableObject)
     {
-        Debug.Log(gameObject);
-        if (!tagOptions.ContainsKey("House"))
+        if (!tagOptions.ContainsKey("Cow"))
         {
-            tagOptions.Add("House", "Press 'A' to Investigate House");
             tagOptions.Add("Cow", "Press 'A' to Steal Cow");    
+            tagOptions.Add("Plant", "Press 'A' to Harvest Plant");    
             tagOptions.Add("Discoverable Object", "Press 'A' to Discover Technology");
+            
+            // tagToAction.Add("Cow", () => StealCow(gameObject));    
+            // tagToAction.Add("Plant", () => HarvestPlant(gameObject));    
+            // tagToAction.Add("Discoverable Object", () => { });
         }
         
         foreach (var key in tagOptions.Keys)
         {
-            if (gameObject.CompareTag(key))
+            if (interactableObject.gameObject.CompareTag(key))
             {
                 text.text = tagOptions.GetValueOrDefault(key, "");
                 popup.SetActive(true);
+
+                if (key == "Cow") onHarvestAction = () => StealCow(interactableObject.gameObject);
+                if (key == "Plant") onHarvestAction = () => HarvestPlant(interactableObject.gameObject);
                 break;
             }
         }
@@ -162,6 +160,89 @@ public class MainScript : MonoBehaviour
         if (tagOptions.ContainsKey(gameObject.tag))
         {
             popup.SetActive(false);
+        }
+    }
+
+    private void InstantiateGrids()
+    {
+        int numberOfPlants = (int)Math.Ceiling(playerMoney * Constants.PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS * 1/Constants.COST_TO_PLANT_LENTIL);
+        plants = new InteractableObject[numberOfPlants];
+        InstantiateGrid(plants, plantPrefab);
+
+        int numberOfCows = (int)Math.Ceiling(enemyMoney * Constants.PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS * 1/Constants.COST_TO_PLANT_COW);
+        cows = new InteractableObject[1];
+        InstantiateGrid(cows, cowPrefab);
+
+        needsToCallGridMethod = true;
+    }
+
+    private void InstantiateGrid(InteractableObject[] interactableObjects, GameObject prefab)
+    {
+        for (int i = 0; i < interactableObjects.Length; i++)
+        {
+            interactableObjects[i] = Instantiate(prefab, transform.position, Quaternion.identity).GetComponent<InteractableObject>();
+            InteractableObject obj = interactableObjects[i];
+            obj.transform.parent = container.transform;
+            obj.SetActions(() => TriggerEnterAction(obj), 
+                                            () => TriggerExitAction(obj.gameObject));
+            
+        }
+        
+    }
+
+    private void PutIntoGrids()
+    {
+        PutIntoGrid(cows, 30f, 30f, cowYOffBy);
+        PutIntoGrid(plants, 0f, 0f, plantYOffBy);
+        
+        needsToCallGridMethod = false;
+    }
+
+    private void PutIntoGrid(InteractableObject[] interactableObjects, float xStartEdge, float zStartEdge, float yOffBy)
+    {
+        InteractableObject interactableObject = interactableObjects[0];
+        int rows = (int) Math.Sqrt(interactableObjects.Length);
+        int columns = (int) Math.Ceiling(interactableObjects.Length / (double) rows);
+        Grid grid = new Grid(new Dimension(xStartEdge, zStartEdge, interactableObject.GetXSize() * columns * 2, 
+                        interactableObject.GetZSize() * rows * 2), rows, columns);
+        grid.TurnIntoGrid(interactableObjects, interactableObject.GetXSize(), interactableObject.GetZSize(), land.GetYBeginningEdge() + yOffBy);
+    }
+    
+    // Harvesting
+    public void StealCow(GameObject cow)
+    {
+        Destroy(cow);
+        playerMoney += Constants.PROFIT_FROM_HARVESTING_COW;
+        popup.SetActive(false);
+    }
+
+    public void HarvestPlant(GameObject plant)
+    {
+        Destroy(plant);
+        playerMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL;
+        popup.SetActive(false);
+    }
+    
+    // On Actions
+    public void OnHarvest(InputAction.CallbackContext context)
+    {
+        if (context.action.triggered)
+        {
+            if (onHarvestAction != null)
+            {
+                onHarvestAction();
+            }
+        }
+    }
+    
+    public void OnOptionB(InputAction.CallbackContext context)
+    {
+        if (context.action.triggered)
+        {
+            if (onOptionBAction != null)
+            {
+                onOptionBAction();
+            }
         }
     }
 }
