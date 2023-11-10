@@ -69,12 +69,7 @@ public class Grid
         float remainingDimension = gridDimensionSize - bufferBetweenItems * (gridDimension - 1);
 
         float itemDimension = remainingDimension / gridDimension;
-
-        // if (itemDimensionMax != -1 && itemDimension > itemDimensionMax)
-        // {
-        //     itemDimension = itemDimensionMax;
-        //
-        // }
+        
         return itemDimension;
     }
 

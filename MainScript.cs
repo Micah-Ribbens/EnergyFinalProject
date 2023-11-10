@@ -7,12 +7,13 @@ public class MainScript : MonoBehaviour
 {
     // Placeable Objects
     private InteractableObject enemyHouse;
-    private PlaceableObject enemyHouseWithCameras;
     private PlaceableObject playerHouse;
     private PlaceableObject land;
     
     // Constant Variables (Objects)
     private GameObject enemy;
+    public GameObject enemyCannonLeft;
+    public GameObject enemyCannonRight;
     private GameObject player;
     public TextMeshProUGUI text;
     public GameObject popup;
@@ -35,13 +36,14 @@ public class MainScript : MonoBehaviour
     {
         // Grabbing variables from Unity Hub
         enemyHouse = GameObject.Find("EnemyHouse").GetComponent<InteractableObject>();
-        enemyHouseWithCameras = GameObject.Find("EnemyHouseWithCameras").GetComponent<PlaceableObject>();
         playerHouse = GameObject.Find("PlayerHouse").GetComponent<PlaceableObject>();
         land = GameObject.Find("Land").GetComponent<PlaceableObject>();
         enemy = GameObject.Find("Enemy");
         enemyPlacableObject = enemy.GetComponent<PlaceableObject>();
         player = GameObject.Find("Player");
         
+        Debug.Log("x " + enemyHouse.GetX() + " y " + enemyHouse.GetY() + " z " + enemyHouse.GetZ());
+
         popup.SetActive(false);
         
         plants = new PlaceableObject[15];
@@ -72,23 +74,20 @@ public class MainScript : MonoBehaviour
             movementVector.Normalize();
             
             // Going from a direction that is in world terms to my "local space"
-            // Vector3 newMovementVector = enemy.transform.InverseTransformDirection(movementVector);
-            enemy.transform.Translate(movementVector * Time.deltaTime * 5f);
+            enemy.transform.Translate(movementVector * Time.deltaTime * 5f, Space.World);
             
             double yRotation = Math.Atan2(movementVector.x, movementVector.z) * 180.0 / Math.PI;
-            enemy.transform.eulerAngles = new Vector3(enemy.transform.rotation.x,
-             (float) yRotation, enemy.transform.rotation.z);
+            enemy.transform.eulerAngles = new Vector3(enemy.transform.eulerAngles.x,
+             (float) yRotation + 90f, enemy.transform.eulerAngles.z);
         }
 
-        // TODO How to shoot bullets from enemy cannon!
         if (timeWhenEnemyShoots <= Time.time)
         {
             movementVector.Normalize();
-            Vector3 bullet1Position = new Vector3(enemyPlacableObject.GetXBeginningEdge(), enemyPosition.y, enemyPlacableObject.GetZEndEdge());
-            Vector3 bullet2Position = new Vector3(enemyPlacableObject.GetXEndEdge(), enemyPosition.y, enemyPlacableObject.GetZEndEdge());
 
-            GameObject bullet1 = Instantiate(bulletPrefab, bullet1Position, Quaternion.identity);
-            GameObject bullet2 = Instantiate(bulletPrefab, bullet2Position, Quaternion.identity);
+            Vector3 bulletRotation = enemy.transform.eulerAngles + bulletPrefab.transform.eulerAngles;
+            GameObject bullet1 = Instantiate(bulletPrefab, enemyCannonLeft.transform.position, Quaternion.Euler(bulletRotation));
+            GameObject bullet2 = Instantiate(bulletPrefab, enemyCannonRight.transform.position, Quaternion.Euler(bulletRotation));
             
             bullet1.GetComponent<Bullet>().SetMovementVector(movementVector);
             bullet2.GetComponent<Bullet>().SetMovementVector(movementVector);
@@ -100,9 +99,8 @@ public class MainScript : MonoBehaviour
 
     private void Initialize()
     {
-        enemyHouse.SetActions(() => TriggerEnterAction(enemyHouse.gameObject), () => TriggerExitAction(enemyHouse.gameObject));
+        // enemyHouse.SetActions(() => TriggerEnterAction(enemyHouse.gameObject), () => TriggerExitAction(enemyHouse.gameObject));
         enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge(), enemyHouse.GetZBeginningEdge());
-        enemyHouseWithCameras.Place(enemyHouseWithCameras.GetXBeginningEdge(), land.GetYBeginningEdge(), enemyHouseWithCameras.GetZBeginningEdge());
         playerHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge(), enemyHouse.GetZBeginningEdge());
         
         PlaceableObject plant = plants[0];
@@ -115,6 +113,7 @@ public class MainScript : MonoBehaviour
 
     private void TriggerEnterAction(GameObject gameObject)
     {
+        Debug.Log(gameObject);
         if (!tagOptions.ContainsKey("House"))
         {
             tagOptions.Add("House", "Press 'A' to Investigate House");
@@ -126,8 +125,8 @@ public class MainScript : MonoBehaviour
         {
             if (gameObject.CompareTag(key))
             {
-                text.text = tagOptions.GetValueOrDefault(key, "");
-                popup.SetActive(true);
+                // text.text = tagOptions.GetValueOrDefault(key, "");
+                // popup.SetActive(true);
                 break;
             }
         }

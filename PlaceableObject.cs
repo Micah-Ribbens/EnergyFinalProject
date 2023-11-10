@@ -10,7 +10,7 @@ public class PlaceableObject : MonoBehaviour
 
     private void Start()
     {
-        MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+        Renderer meshRenderer = GetComponent<MeshRenderer>();
         xSize = meshRenderer.bounds.size.x;
         ySize = meshRenderer.bounds.size.y;
         zSize = meshRenderer.bounds.size.z;
@@ -18,11 +18,12 @@ public class PlaceableObject : MonoBehaviour
 
     public void Place(float x, float y, float z)
     {
+        
         float xPosition = x + xSize / 2;
         float yPosition = y + ySize / 2;
         float zPosition = z + zSize / 2;
         
-        transform.position = new Vector3(xPosition + GetXOffset(), yPosition + GetYOffset(), zPosition + GetZOffset());
+        transform.position = new Vector3(xPosition, yPosition, zPosition);
     }
     
     // Constants
@@ -42,20 +43,4 @@ public class PlaceableObject : MonoBehaviour
     public float GetXBeginningEdge() { return GetX() + xSize / 2; }
     public float GetYBeginningEdge() { return GetY() + ySize / 2; }
     public float GetZBeginningEdge() { return GetZ() + zSize / 2; }
-    
-    public float GetXOffset() { return GetOffset().x; }
-    public float GetYOffset() { return GetOffset().y; }
-    public float GetZOffset() { return GetOffset().z; }
-    
-    public Vector3 GetOffset()
-    {
-        Vector3 rotatedPosition = transform.position;
-        Quaternion tempRotation = transform.rotation;
-        transform.rotation = Quaternion.identity;
-        Vector3 nonRotatedPosition = transform.position;
-        transform.rotation = tempRotation;
-
-        return nonRotatedPosition - rotatedPosition;
-    }
-    
 }

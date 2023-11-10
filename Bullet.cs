@@ -16,7 +16,7 @@ public class Bullet : MonoBehaviour
 
     private void Update()
     {
-        transform.Translate(movementVector * Time.deltaTime * speed);
+        transform.Translate(movementVector * Time.deltaTime * speed, Space.World);
         if (timeToDelete <= Time.time)
         {
             Destroy(gameObject);
