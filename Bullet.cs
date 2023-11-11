@@ -7,6 +7,7 @@ public class Bullet : MonoBehaviour
     private float timeBeforeDelete = 5f;
     private Vector3 movementVector;
     private float speed = 20f;
+    private Action onTriggerEnterAction;
     
     private void Start()
     {
@@ -27,5 +28,18 @@ public class Bullet : MonoBehaviour
     {
         movementVector = vector;
 
+    }
+
+    public void SetOnTriggerEnterAction(Action action)
+    {
+        onTriggerEnterAction = action;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            onTriggerEnterAction();
+        }
     }
 }

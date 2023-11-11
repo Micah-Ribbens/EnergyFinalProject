@@ -15,6 +15,7 @@ public class MainScript : MonoBehaviour
     private InteractableObject bed;
     private InteractableObject geothermalNewspaper;
     private InteractableObject energyProviderNewspaper;
+    private InteractableObject securityCamera;
     
     // GameObject's gotten from Unity Editor
     public GameObject enemyHouseObject;
@@ -24,7 +25,8 @@ public class MainScript : MonoBehaviour
     public GameObject container;
     public GameObject geothermalNewspaperObject;
     public GameObject energyProviderNewspaperObject;
-    
+    public GameObject securityCameraObject;
+
     // Constant Variables (Objects)
     public GameObject enemy;
     public GameObject enemyCannonLeft;
@@ -60,9 +62,11 @@ public class MainScript : MonoBehaviour
     private float timeWhenEnemyShoots = 0;
     private bool popupIsActive = false;
     private bool largeTextIsActive = false;
+    private Vector3 enemyStartingPosition;
     
     // Modifiable Values
-    private float timeBeforeShooting = 2f;
+    private float timeBeforeShooting = 5f;
+    private float delayAfterSpawningForEnemyShooting = 10f;
     
     // Calculated Constant Factors Off By
     private float playerHouseYOffBy = 1.1f;
@@ -97,6 +101,9 @@ public class MainScript : MonoBehaviour
         geothermalNewspaper = geothermalNewspaperObject.GetComponent<InteractableObject>();
         energyProviderNewspaper = energyProviderNewspaperObject.GetComponent<InteractableObject>();
         player = playerObject.GetComponent<Player>();
+        securityCamera = securityCameraObject.GetComponent<InteractableObject>();
+
+        enemyStartingPosition = enemy.transform.position;
 
         playerOriginalPosition = player.transform.position;
         
@@ -108,7 +115,9 @@ public class MainScript : MonoBehaviour
         // Tags
         tagOptions.Add("Cow", "Press 'A' to Steal Cow");    
         tagOptions.Add("Plant", "Press 'A' to Harvest Plant");    
-        tagOptions.Add("DiscoverableObject", "Press 'A' to Discover Technology");
+        tagOptions.Add("GeothermalNewspaper", "Press 'A' to Discover Technology");
+        tagOptions.Add("EnergyProviderNewspaper", "Press 'A' to Discover Technology");
+        tagOptions.Add("SecurityCamera", "Press 'A' to Discover Technology");
         tagOptions.Add("Bed", "Press 'A' to Start New Day");
     }
     
@@ -150,8 +159,6 @@ public class MainScript : MonoBehaviour
             Initialize();
             hasCalledInitialization = true;
         }
-
-
         
         runEnemyLogic();
     }
@@ -184,9 +191,15 @@ public class MainScript : MonoBehaviour
 
             bullet1.transform.parent = container.transform;
             bullet2.transform.parent = container.transform;
+
+            Bullet bullet1Script = bullet1.GetComponent<Bullet>();
+            Bullet bullet2Script = bullet2.GetComponent<Bullet>();
             
-            bullet1.GetComponent<Bullet>().SetMovementVector(movementVector);
-            bullet2.GetComponent<Bullet>().SetMovementVector(movementVector);
+            bullet1Script.SetMovementVector(movementVector);
+            bullet2Script.SetMovementVector(movementVector);
+            
+            bullet1Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet1));
+            bullet2Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet2));
             
             timeWhenEnemyShoots = Time.time + timeBeforeShooting;
         }
@@ -195,7 +208,13 @@ public class MainScript : MonoBehaviour
 
     private void Initialize()
     {
-        bed.SetActions(() => TriggerEnterAction(bed.gameObject), () => TriggerExitAction(bed.gameObject));
+        InteractableObject[] objects = { bed, securityCamera, energyProviderNewspaper, geothermalNewspaper};
+        foreach (var obj in objects)
+        {
+            obj.SetActions(() => TriggerEnterAction(obj.gameObject), () => TriggerExitAction(obj.gameObject));
+            
+        }
+        
         enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + enemyHouseYOffBy, enemyHouse.GetZBeginningEdge());
         playerHouse.Place(playerHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + playerHouseYOffBy, playerHouse.GetZBeginningEdge());
         bed.Place(bed.GetXBeginningEdge(), land.GetYBeginningEdge() + bedYOffBy, bed.GetZBeginningEdge());
@@ -263,9 +282,10 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
-            Debug.Log("New Day Stuff");
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
+            timeWhenEnemyShoots = delayAfterSpawningForEnemyShooting + timeBeforeShooting;
+            enemy.transform.position = enemyStartingPosition;
         });
 
         InstantiateGrids();
@@ -297,14 +317,15 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
-            Debug.Log("Geothermal Stuff");
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
+            geothermalNewspaperObject.SetActive(false);
             houseEnergyEfficiency -= Constants.GEOTHERMAL_EFFICIENCY_INCREASE;
         });
         
         SetOnButtonPressB(() =>
         {
+            geothermalNewspaperObject.SetActive(false);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
         });
@@ -319,7 +340,7 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
-            Debug.Log("Energy Provider");
+            energyProviderNewspaperObject.SetActive(false);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             energyCostMultiplier = Constants.LIGHTNING_ENERGY_PROVIDER_COST_MULTIPLIER;
@@ -327,6 +348,7 @@ public class MainScript : MonoBehaviour
         
         SetOnButtonPressB(() =>
         {
+            energyProviderNewspaperObject.SetActive(false);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             energyCostMultiplier = Constants.TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER;
@@ -342,7 +364,7 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
-            Debug.Log("LED Stuff");
+            securityCameraObject.SetActive(false);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             lightsEnergyEfficiency -= Constants.LED_LIGHT_EFFICIENCY_INCREASE;
@@ -383,6 +405,7 @@ public class MainScript : MonoBehaviour
                 else if (key == "Bed") SetOnButtonPressA(() => BeginNewDay(true));
                 else if (key == "EnergyProviderNewspaper") SetOnButtonPressA(DiscoverEnergyProvider);
                 else if (key == "GeothermalNewspaper") SetOnButtonPressA(DiscoverGeothermal);
+                else if (key == "SecurityCamera") SetOnButtonPressA(DiscoverLEDTechnology);
                 break;
             }
         }
@@ -416,7 +439,6 @@ public class MainScript : MonoBehaviour
         
         SetOnButtonPressA(() =>
         {
-            Debug.Log("Restart Stuff");
             SetPopupActive(false);
             timeWhenEnemyShoots = Time.time + timeBeforeShooting;
             SetLargeTextCanvasActive(false);
@@ -426,11 +448,15 @@ public class MainScript : MonoBehaviour
             houseEnergyEfficiency = 1;
             lightsEnergyEfficiency = 1;
             playerMoneyBuffer = 0;
+            dayNumber = 1;
             BeginNewDay(false);
             playerObject.SetActive(true);
             playerObject.transform.position = playerOriginalPosition;
             canCallRestartGame = true;
-            dayNumber = 1;
+            
+            geothermalNewspaperObject.SetActive(true);
+            energyProviderNewspaperObject.SetActive(true);
+            securityCameraObject.SetActive(true);
         });
     }
 
@@ -465,5 +491,22 @@ Press 'A' to continue";
     private void SetOnButtonPressB(Action action)
     {
         onButtonPressB = action;
+    }
+
+    private void RunBulletCollision(GameObject bullet)
+    {
+        if (!largeTextIsActive)
+        {
+            numberOfCowsLeft = cows.Length;
+            numberOfPlantsLeft = plants.Length;
+            SetLargeTextCanvasActive(true);
+            largeText.text = Constants.GOT_SHOT_TEXT;
+
+            SetOnButtonPressA(() =>
+            {
+                BeginNewDay(true);
+            });
+        }
+        Destroy(bullet);
     }
 }

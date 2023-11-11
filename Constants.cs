@@ -37,7 +37,9 @@ Press 'B' to deny";
 
     public static string ENERGY_PROVIDER_NEWSPAPER_TEXT =
 @"You have two options for your energy provider:
+
 Lightning Power: 20% cheaper than current provider, but generates all the electricity using fossil fuels
+
 Tree Hugger Power: 30% more expensive than current provider, but generates all the electricity through renewables
 
 Press 'A' for Lightning Power
@@ -54,10 +56,16 @@ Press 'A' to continue";
 
     public static string DAY_1_TEXT =
 "Day 1 of your adventure. That stupid cow farming neighbor is destroying the environment. You are a lentil farmer, " +
-"which is must better for the environment. You must stop him from destroying the environment, but how? You could somehow run him out of business. " +
+"which is much better for the environment. You must stop him from destroying the environment, but how? You could somehow run him out of business. " +
 @"If you got all the share of money that would work (obviously there are no ulterior motives)!
 
 Press 'A' to continue";
+
+    public static string GOT_SHOT_TEXT =
+@"Have a pleasant nap. Oh I almost forgot to thank you. Thanks for all the plants and your inventory too? You're too kind.
+
+Pleasure Doing Business With You,
+Your Friendly Cow Farmer";
 
 
 }
