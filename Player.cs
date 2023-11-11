@@ -23,8 +23,8 @@ public class Player : PlaceableObject
     
     // Editable Variables
     // -Camera
-    private float xSensitivity = 60f;
-    private float ySensitivity = 60f;
+    private float xSensitivity = 120f;
+    private float ySensitivity = 120f;
     
     // -Movement
     private float jumpHeight = 4f;
@@ -48,6 +48,25 @@ public class Player : PlaceableObject
         {
             runGameLogic();
         }
+        
+        // Jumping Logic
+        jumpVector = new Vector3(0, physicsEquation.GetCurentVelocity(Time.deltaTime), 0);
+        
+        if (isGrounded && jumpVector.y < 0)
+        {
+            physicsEquation.Stop();
+            jumpsLeft = maxJumps;
+            jumpVector.y = 0;
+        }
+
+        if (!isGrounded && jumpsLeft == maxJumps && !physicsEquation.isStarted)
+        {
+            physicsEquation.Start(0);
+            physicsEquation.velocity = 0;
+        }
+
+        controller.Move(transform.TransformDirection(jumpVector) * Time.deltaTime);
+        physicsEquation.UpdateLastTime(Time.deltaTime);
     }
 
     private void Instantiate()
@@ -80,24 +99,7 @@ public class Player : PlaceableObject
 
         transform.Rotate(Vector3.up * (lookVector.x * Time.deltaTime) * xSensitivity);
         
-        // Jumping Logic
-        jumpVector = new Vector3(0, physicsEquation.GetCurentVelocity(Time.deltaTime), 0);
-        
-        if (isGrounded && jumpVector.y < 0)
-        {
-            physicsEquation.Stop();
-            jumpsLeft = maxJumps;
-            jumpVector.y = 0;
-        }
 
-        if (!isGrounded && jumpsLeft == maxJumps && !physicsEquation.isStarted)
-        {
-            physicsEquation.Start(0);
-            physicsEquation.velocity = 0;
-        }
-
-        controller.Move(transform.TransformDirection(jumpVector) * Time.deltaTime);
-        physicsEquation.UpdateLastTime(Time.deltaTime);
     }
 
     private void Jump()
@@ -133,5 +135,18 @@ public class Player : PlaceableObject
     public void SetIsActive(bool isActive)
     {
         this.isActive = isActive;
+
+        if (!isActive && controller != null)
+        {
+            controller.Move(Vector3.zero * Time.deltaTime * playerSpeed);
+        }
+    }
+
+    public void SetPosition(Vector3 position)
+    {
+        if (isActive)
+        {
+            transform.position = position;
+        }
     }
 }

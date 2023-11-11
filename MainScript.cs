@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
+// TODO fix button mapping glitch!
 public class MainScript : MonoBehaviour
 {
     // Placeable Objects
@@ -16,7 +17,8 @@ public class MainScript : MonoBehaviour
     private InteractableObject geothermalNewspaper;
     private InteractableObject energyProviderNewspaper;
     private InteractableObject securityCamera;
-    
+    private InteractableObject greenNewspaper;
+
     // GameObject's gotten from Unity Editor
     public GameObject enemyHouseObject;
     public GameObject playerHouseObject;
@@ -26,6 +28,7 @@ public class MainScript : MonoBehaviour
     public GameObject geothermalNewspaperObject;
     public GameObject energyProviderNewspaperObject;
     public GameObject securityCameraObject;
+    public GameObject greenNewspaperObject;
 
     // Constant Variables (Objects)
     public GameObject enemy;
@@ -43,11 +46,13 @@ public class MainScript : MonoBehaviour
     
     // Data Management
     private Dictionary<string, string> tagOptions = new Dictionary<string, string>();
-    private Dictionary<string, Action> tagToAction = new Dictionary<string, Action>();
     private InteractableObject[] plants = new InteractableObject[1];
     private InteractableObject[] cows = new InteractableObject[1];
     private Action onButtonPressA;
     private Action onButtonPressB;
+    private Vector3 greenNewspaperEndLocation;
+    private bool hasCollectedGreenNewspaper;
+    private Vector3 playerStartPosition = new Vector3();
     
     // Money
     private int numberOfCowsLeft;
@@ -55,14 +60,15 @@ public class MainScript : MonoBehaviour
     private float playerMoney = Constants.PLAYER_START_MONEY;
     private float enemyMoney = Constants.ENEMY_START_MONEY;
     private float playerMoneyBuffer = 0f;
-    
-        
+
     // Other
     private bool hasCalledInitialization = false;
     private float timeWhenEnemyShoots = 0;
     private bool popupIsActive = false;
     private bool largeTextIsActive = false;
     private Vector3 enemyStartingPosition;
+    private int greenOptionsChosen = 0;
+    private int greenOptionsNeeded = 3;
     
     // Modifiable Values
     private float timeBeforeShooting = 5f;
@@ -102,6 +108,7 @@ public class MainScript : MonoBehaviour
         energyProviderNewspaper = energyProviderNewspaperObject.GetComponent<InteractableObject>();
         player = playerObject.GetComponent<Player>();
         securityCamera = securityCameraObject.GetComponent<InteractableObject>();
+        greenNewspaper = greenNewspaperObject.GetComponent<InteractableObject>();
 
         enemyStartingPosition = enemy.transform.position;
 
@@ -111,14 +118,19 @@ public class MainScript : MonoBehaviour
         SetPopupActive(false);
         SetLargeTextCanvasActive(false);
         BeginNewDay(false);
+        greenNewspaperObject.SetActive(false);
+        greenNewspaperEndLocation = geothermalNewspaperObject.transform.position;
         
         // Tags
-        tagOptions.Add("Cow", "Press 'A' to Steal Cow");    
-        tagOptions.Add("Plant", "Press 'A' to Harvest Plant");    
-        tagOptions.Add("GeothermalNewspaper", "Press 'A' to Discover Technology");
-        tagOptions.Add("EnergyProviderNewspaper", "Press 'A' to Discover Technology");
-        tagOptions.Add("SecurityCamera", "Press 'A' to Discover Technology");
-        tagOptions.Add("Bed", "Press 'A' to Start New Day");
+        tagOptions.Add("Cow", "Press 'B' to Steal Cow");    
+        tagOptions.Add("Plant", "Press 'B' to Harvest Plant");    
+        tagOptions.Add("GeothermalNewspaper", "Press 'B' to Discover Technology");
+        tagOptions.Add("EnergyProviderNewspaper", "Press 'B' to Discover Technology");
+        tagOptions.Add("SecurityCamera", "Press 'B' to Discover Technology");
+        tagOptions.Add("Bed", "Press 'X' to Start New Day");
+        tagOptions.Add("GreenNewspaper", "Press 'B' To Collect Tree Hugger Newsletter");
+        tagOptions.Add("EnemyHouse", "Press 'B' To Place Tree Hugger Newsletter");
+        
     }
     
     private void Update()
@@ -128,6 +140,13 @@ public class MainScript : MonoBehaviour
         if (framesBeforeCallingGridMethod == 0)
         {
             PutIntoGrids();
+        }
+
+        if (GetPlayerMoneyProportion() >= Constants.MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER)
+        {
+            geothermalNewspaperObject.SetActive(true);
+            geothermalNewspaper.SetActions(() => TriggerEnterAction(geothermalNewspaperObject),
+                                            () => TriggerExitAction(geothermalNewspaperObject));
         }
         
         if (playerMoney <= 0 && canCallRestartGame)
@@ -229,7 +248,7 @@ public class MainScript : MonoBehaviour
         InstantiateGrid(plants, plantPrefab);
 
         int numberOfCows = (int)Math.Ceiling(enemyMoney * Constants.PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS * 1/Constants.COST_TO_PLANT_COW);
-        cows = new InteractableObject[1];
+        cows = new InteractableObject[numberOfCows];
         InstantiateGrid(cows, cowPrefab);
 
 
@@ -284,8 +303,9 @@ public class MainScript : MonoBehaviour
         {
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
-            timeWhenEnemyShoots = delayAfterSpawningForEnemyShooting + timeBeforeShooting;
+            timeWhenEnemyShoots = delayAfterSpawningForEnemyShooting + timeBeforeShooting + Time.time;
             enemy.transform.position = enemyStartingPosition;
+            player.SetPosition(playerOriginalPosition);
         });
 
         InstantiateGrids();
@@ -295,7 +315,7 @@ public class MainScript : MonoBehaviour
     private void PutIntoGrids()
     {
         PutIntoGrid(cows, 30f, 30f, cowYOffBy);
-        PutIntoGrid(plants, 0f, 0f, plantYOffBy);
+        PutIntoGrid(plants, 5f, 5f, plantYOffBy);
     }
 
     private void PutIntoGrid(InteractableObject[] interactableObjects, float xStartEdge, float zStartEdge, float yOffBy)
@@ -321,6 +341,7 @@ public class MainScript : MonoBehaviour
             SetPopupActive(popupIsActive);
             geothermalNewspaperObject.SetActive(false);
             houseEnergyEfficiency -= Constants.GEOTHERMAL_EFFICIENCY_INCREASE;
+            greenOptionsChosen++;
         });
         
         SetOnButtonPressB(() =>
@@ -343,7 +364,8 @@ public class MainScript : MonoBehaviour
             energyProviderNewspaperObject.SetActive(false);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
-            energyCostMultiplier = Constants.LIGHTNING_ENERGY_PROVIDER_COST_MULTIPLIER;
+            greenOptionsChosen++;
+            energyCostMultiplier = Constants.TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER;
         });
         
         SetOnButtonPressB(() =>
@@ -351,7 +373,7 @@ public class MainScript : MonoBehaviour
             energyProviderNewspaperObject.SetActive(false);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
-            energyCostMultiplier = Constants.TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER;
+            energyCostMultiplier = Constants.LIGHTNING_ENERGY_PROVIDER_COST_MULTIPLIER;
         });
 
     }
@@ -364,6 +386,7 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
+            greenOptionsChosen++;
             securityCameraObject.SetActive(false);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
@@ -400,12 +423,12 @@ public class MainScript : MonoBehaviour
                 popupText.text = tagOptions.GetValueOrDefault(key, "");
                 SetPopupActive(true);
 
-                if (key == "Cow") SetOnButtonPressA(() => StealCow(gameObject));
-                else if (key == "Plant") SetOnButtonPressA(() => HarvestPlant(gameObject));
+                if (key == "Cow") SetOnButtonPressB(() => StealCow(gameObject));
+                else if (key == "Plant") SetOnButtonPressB(() => HarvestPlant(gameObject));
                 else if (key == "Bed") SetOnButtonPressA(() => BeginNewDay(true));
-                else if (key == "EnergyProviderNewspaper") SetOnButtonPressA(DiscoverEnergyProvider);
-                else if (key == "GeothermalNewspaper") SetOnButtonPressA(DiscoverGeothermal);
-                else if (key == "SecurityCamera") SetOnButtonPressA(DiscoverLEDTechnology);
+                else if (key == "EnergyProviderNewspaper") SetOnButtonPressB(DiscoverEnergyProvider);
+                else if (key == "GeothermalNewspaper") SetOnButtonPressB(DiscoverGeothermal);
+                else if (key == "SecurityCamera") SetOnButtonPressB(DiscoverLEDTechnology);
                 break;
             }
         }
@@ -417,6 +440,8 @@ public class MainScript : MonoBehaviour
         if (tagOptions.ContainsKey(gameObject.tag))
         {
             SetPopupActive(false);
+            onButtonPressA = null;
+            onButtonPressB = null;
         }
     }
     
@@ -440,28 +465,39 @@ public class MainScript : MonoBehaviour
         SetOnButtonPressA(() =>
         {
             SetPopupActive(false);
-            timeWhenEnemyShoots = Time.time + timeBeforeShooting;
             SetLargeTextCanvasActive(false);
+            
             playerMoney = Constants.PLAYER_START_MONEY;
             enemyMoney = Constants.ENEMY_START_MONEY;
+            
             energyCostMultiplier = 1;
             houseEnergyEfficiency = 1;
             lightsEnergyEfficiency = 1;
             playerMoneyBuffer = 0;
             dayNumber = 1;
-            BeginNewDay(false);
-            playerObject.SetActive(true);
-            playerObject.transform.position = playerOriginalPosition;
+            greenOptionsChosen = 0;
+            
             canCallRestartGame = true;
+            hasCollectedGreenNewspaper = false;
             
             geothermalNewspaperObject.SetActive(true);
             energyProviderNewspaperObject.SetActive(true);
             securityCameraObject.SetActive(true);
+            
+            greenNewspaperObject.SetActive(false);
+            greenNewspaper.SetActions(null, null);
+            
+            BeginNewDay(false);
         });
     }
 
     private void SetLargeTextCanvasActive(bool isActive)
     {
+        if (!isActive && largeTextIsActive)
+        {
+            timeWhenEnemyShoots = Time.time + timeBeforeShooting;
+        }
+        
         largeTextCanvas.SetActive(isActive);
         largeTextIsActive = isActive;
         player.SetIsActive(!isActive);
@@ -479,7 +515,7 @@ public class MainScript : MonoBehaviour
 
         return "Day Number " + dayNumber + @". I have still not succeeded in stopping that cow farmer. I must continue trying.
 
-Press 'A' to continue";
+Press 'X' to continue";
 
     }
 
@@ -508,5 +544,10 @@ Press 'A' to continue";
             });
         }
         Destroy(bullet);
+    }
+
+    private float GetPlayerMoneyProportion()
+    {
+        return playerMoney / (playerMoney + enemyMoney);
     }
 }

@@ -26,46 +26,53 @@ public static class Constants
     public static int ENEMY_START_MONEY = 1_000_000;
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5;
     public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .1;
+    public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0.5f;
     
     // Messages
     public static string GEOTHERMAL_NEWSPAPER_TEXT =
 "You can install Geothermal Power for $3, 000 Geothermal Power will increase your house's energy efficiency by 95% " +
 @"and it is better for the enviornment!
 
-Press 'A' to install Geothermal Power
+Press 'X' to install Geothermal Power
 Press 'B' to deny";
 
     public static string ENERGY_PROVIDER_NEWSPAPER_TEXT =
 @"You have two options for your energy provider:
 
-Lightning Power: 20% cheaper than current provider, but generates all the electricity using fossil fuels
-
 Tree Hugger Power: 30% more expensive than current provider, but generates all the electricity through renewables
 
-Press 'A' for Lightning Power
-Press 'B' for Tree Hugger Power";
+Lightning Power: 20% cheaper than current provider, but generates all the electricity using fossil fuels
+
+Press 'X' for Tree Hugger Power
+
+Press 'B' for Lightning Power
+";
 
     public static string LED_CAMERA_TEXT =
 @"You have discovered LED technology! LED is 30% more energy efficient than what you have currently and it is better for the environment!
 
-Press 'A' to continue";
+Press 'X' to continue";
 
-    public static string GAME_OVER_TEXT = @"Game Over. You have lost all your money.
+    public static string GAME_OVER_TEXT = @"Game Over. You have lost all your money. Let's try to stop that cow farmer again!
 
-Press 'A' to continue";
+Press 'X' to start a new game";
 
     public static string DAY_1_TEXT =
 "Day 1 of your adventure. That stupid cow farming neighbor is destroying the environment. You are a lentil farmer, " +
 "which is much better for the environment. You must stop him from destroying the environment, but how? You could somehow run him out of business. " +
 @"If you got all the share of money that would work (obviously there are no ulterior motives)!
 
-Press 'A' to continue";
+Press 'X' to continue";
 
     public static string GOT_SHOT_TEXT =
 @"Have a pleasant nap. Oh I almost forgot to thank you. Thanks for all the plants and your inventory too? You're too kind.
 
 Pleasure Doing Business With You,
-Your Friendly Cow Farmer";
+Your Friendly Cow Farmer
+
+Press 'X' to continue";
+    
+    
 
 
 }
