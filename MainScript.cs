@@ -48,11 +48,11 @@ public class MainScript : MonoBehaviour
     private Dictionary<string, string> tagOptions = new Dictionary<string, string>();
     private InteractableObject[] plants = new InteractableObject[1];
     private InteractableObject[] cows = new InteractableObject[1];
-    private Action onButtonPressA;
-    private Action onButtonPressB;
-    private Vector3 greenNewspaperEndLocation;
+    private Action onButtonAction1;
+    private Action onButtonAction2;
+    private Action onGrabAction;
+    private bool grabButtonWasPressed;
     private bool hasCollectedGreenNewspaper;
-    private Vector3 playerStartPosition = new Vector3();
     
     // Money
     private int numberOfCowsLeft;
@@ -88,7 +88,7 @@ public class MainScript : MonoBehaviour
     private float houseEnergyEfficiency = 1;
     private float lightsEnergyEfficiency = 1;
     private float energyCostMultiplier = 1;
-    private Vector3 playerOriginalPosition;
+    private Vector3 playerStartPosition;
 
     private int dayNumber = 1;
 
@@ -111,15 +111,13 @@ public class MainScript : MonoBehaviour
         greenNewspaper = greenNewspaperObject.GetComponent<InteractableObject>();
 
         enemyStartingPosition = enemy.transform.position;
-
-        playerOriginalPosition = player.transform.position;
+        playerStartPosition = player.transform.position;
         
         timeWhenEnemyShoots = Time.time + timeBeforeShooting;
         SetPopupActive(false);
         SetLargeTextCanvasActive(false);
         BeginNewDay(false);
         greenNewspaperObject.SetActive(false);
-        greenNewspaperEndLocation = geothermalNewspaperObject.transform.position;
         
         // Tags
         tagOptions.Add("Cow", "Press 'B' to Steal Cow");    
@@ -135,43 +133,26 @@ public class MainScript : MonoBehaviour
     
     private void Update()
     {
-        framesBeforeCallingGridMethod--;
-        
-        if (framesBeforeCallingGridMethod == 0)
-        {
-            PutIntoGrids();
-        }
-
-        if (GetPlayerMoneyProportion() >= Constants.MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER)
-        {
-            geothermalNewspaperObject.SetActive(true);
-            geothermalNewspaper.SetActions(() => TriggerEnterAction(geothermalNewspaperObject),
-                                            () => TriggerExitAction(geothermalNewspaperObject));
-        }
+        RunEveryFrame();
         
         if (playerMoney <= 0 && canCallRestartGame)
         {
             RestartGame();
             canCallRestartGame = false;
-            return;
         }
-
-        if (buttonAWasPressed && onButtonPressA != null)
+        // RunButtonLogic();
+        else if (!largeTextIsActive)
         {
-            buttonAWasPressed = false;
-            onButtonPressA();
-        }
-
-        if (buttonBWasPressed && onButtonPressB != null)
-        {
-            buttonBWasPressed = false;
-            onButtonPressB();
+            runEnemyLogic();
         }
         
-        if (largeTextIsActive)
-        {
-            return;
-        }
+
+        
+    }
+
+    private void RunEveryFrame()
+    {
+        framesBeforeCallingGridMethod--;
         
         if (!hasCalledInitialization)
         {
@@ -179,7 +160,36 @@ public class MainScript : MonoBehaviour
             hasCalledInitialization = true;
         }
         
-        runEnemyLogic();
+        if (framesBeforeCallingGridMethod == 0)
+        {
+            PutIntoGrids();
+        }
+
+
+        
+        RunButtonLogic();
+    }
+
+    private void RunButtonLogic()
+    {
+        if (buttonAWasPressed && onButtonAction1 != null)
+        {
+            buttonAWasPressed = false;
+            onButtonAction1();
+        }
+
+        if (buttonBWasPressed && onButtonAction2 != null)
+        {
+            buttonBWasPressed = false;
+            onButtonAction2();
+        }
+
+        if (grabButtonWasPressed && onGrabAction != null)
+        {
+            grabButtonWasPressed = false;
+            onGrabAction();
+        }
+        
     }
 
     private void runEnemyLogic()
@@ -243,17 +253,17 @@ public class MainScript : MonoBehaviour
 
     private void InstantiateGrids()
     {
-        int numberOfPlants = (int)Math.Ceiling(playerMoney * Constants.PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS * 1/Constants.COST_TO_PLANT_LENTIL);
+        int numberOfPlants = (int)Math.Ceiling(Constants.PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS * playerMoney/Constants.COST_TO_PLANT_LENTIL);
         plants = new InteractableObject[numberOfPlants];
         InstantiateGrid(plants, plantPrefab);
 
-        int numberOfCows = (int)Math.Ceiling(enemyMoney * Constants.PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS * 1/Constants.COST_TO_PLANT_COW);
+        int numberOfCows = (int)Math.Ceiling(Constants.ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS * enemyMoney/Constants.COST_TO_PLANT_COW);
         cows = new InteractableObject[numberOfCows];
         InstantiateGrid(cows, cowPrefab);
 
 
         framesBeforeCallingGridMethod = 2;
-        enemyMoney -= Constants.COST_TO_PLANT_COW * numberOfPlants;
+        enemyMoney -= Constants.COST_TO_PLANT_COW * numberOfCows;
         playerMoney -= Constants.COST_TO_PLANT_LENTIL * numberOfPlants;
 
         numberOfCowsLeft = numberOfCows;
@@ -276,6 +286,45 @@ public class MainScript : MonoBehaviour
 
     private void BeginNewDay(bool calculateMoney)
     {
+        if (calculateMoney)
+        {
+            enemyMoney += (Constants.PROFIT_FROM_HARVESTING_COW + Constants.COST_TO_PLANT_COW) * numberOfCowsLeft;
+            enemyMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL * numberOfPlantsLeft;
+            playerMoney += playerMoneyBuffer;
+            playerMoneyBuffer = 0;
+        }
+        
+        UpdateGridsForNewDay();
+        Debug.Log("money good: " + (GetPlayerMoneyProportion() >= .5f));
+        Debug.Log("Green options good: " + (greenOptionsChosen == greenOptionsNeeded));
+
+        if (GetPlayerMoneyProportion() >= .5f && greenOptionsChosen == greenOptionsNeeded)
+        {
+            greenNewspaper.SetActions(() => TriggerEnterAction(greenNewspaperObject),
+                                        () => TriggerExitAction(greenNewspaperObject));
+            
+            greenNewspaperObject.SetActive(true);
+        } else if (enemyMoney <= 0)
+        {
+            SetLargeTextCanvasActive(true);
+            largeText.text = Constants.ALL_MONEY_TEXT;
+            SetOnButtonAction1(ResetGameVariables);
+        }
+
+        if (enemyMoney > 0)
+        {
+            SetLargeTextCanvasActive(true);
+            largeText.text = GetDayStartText();
+
+            SetOnButtonAction1(NewDayButtonAction);
+            dayNumber++;
+        }
+        
+
+    }
+
+    private void UpdateGridsForNewDay()
+    {
         foreach (InteractableObject interactableObject in cows)
         {
             if (interactableObject != null) Destroy(interactableObject.gameObject);
@@ -285,37 +334,24 @@ public class MainScript : MonoBehaviour
         {
             if (interactableObject != null) Destroy(interactableObject.gameObject);
         }
-
-        if (calculateMoney)
-        {
-            enemyMoney += (Constants.PROFIT_FROM_HARVESTING_COW + Constants.COST_TO_PLANT_COW) * numberOfCowsLeft;
-            enemyMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL * numberOfPlantsLeft;
-            playerMoney += playerMoneyBuffer;
-            playerMoneyBuffer = 0;
-        }
-
-        if (playerMoney == 0) return;
         
-        SetLargeTextCanvasActive(true);
-        largeText.text = GetDayStartText();
-
-        SetOnButtonPressA(() =>
-        {
-            SetLargeTextCanvasActive(false);
-            SetPopupActive(popupIsActive);
-            timeWhenEnemyShoots = delayAfterSpawningForEnemyShooting + timeBeforeShooting + Time.time;
-            enemy.transform.position = enemyStartingPosition;
-            player.SetPosition(playerOriginalPosition);
-        });
-
         InstantiateGrids();
-        dayNumber++;
     }
 
+    private void NewDayButtonAction()
+    {
+        SetLargeTextCanvasActive(false);
+        SetPopupActive(popupIsActive);
+        timeWhenEnemyShoots = delayAfterSpawningForEnemyShooting + timeBeforeShooting + Time.time;
+        enemy.transform.position = enemyStartingPosition;
+        player.SetPosition(playerStartPosition);
+    }
+    
+    
     private void PutIntoGrids()
     {
         PutIntoGrid(cows, 30f, 30f, cowYOffBy);
-        PutIntoGrid(plants, 5f, 5f, plantYOffBy);
+        PutIntoGrid(plants, -5f, -5f, plantYOffBy);
     }
 
     private void PutIntoGrid(InteractableObject[] interactableObjects, float xStartEdge, float zStartEdge, float yOffBy)
@@ -335,18 +371,18 @@ public class MainScript : MonoBehaviour
         largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT;
         SetPopupActive(false);
 
-        SetOnButtonPressA(() =>
+        SetOnButtonAction1(() =>
         {
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
-            geothermalNewspaperObject.SetActive(false);
+            DisableInteractableObject(geothermalNewspaperObject);
             houseEnergyEfficiency -= Constants.GEOTHERMAL_EFFICIENCY_INCREASE;
             greenOptionsChosen++;
         });
         
-        SetOnButtonPressB(() =>
+        SetOnButtonAction2(() =>
         {
-            geothermalNewspaperObject.SetActive(false);
+            DisableInteractableObject(geothermalNewspaperObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
         });
@@ -359,18 +395,18 @@ public class MainScript : MonoBehaviour
         largeText.text = Constants.ENERGY_PROVIDER_NEWSPAPER_TEXT;
         SetPopupActive(false);
 
-        SetOnButtonPressA(() =>
+        SetOnButtonAction1(() =>
         {
-            energyProviderNewspaperObject.SetActive(false);
+            DisableInteractableObject(energyProviderNewspaperObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             greenOptionsChosen++;
             energyCostMultiplier = Constants.TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER;
         });
         
-        SetOnButtonPressB(() =>
+        SetOnButtonAction2(() =>
         {
-            energyProviderNewspaperObject.SetActive(false);
+            DisableInteractableObject(energyProviderNewspaperObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             energyCostMultiplier = Constants.LIGHTNING_ENERGY_PROVIDER_COST_MULTIPLIER;
@@ -384,10 +420,10 @@ public class MainScript : MonoBehaviour
         largeText.text = Constants.LED_CAMERA_TEXT;
         SetPopupActive(false);
 
-        SetOnButtonPressA(() =>
+        SetOnButtonAction1(() =>
         {
             greenOptionsChosen++;
-            securityCameraObject.SetActive(false);
+            DisableInteractableObject(securityCameraObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             lightsEnergyEfficiency -= Constants.LED_LIGHT_EFFICIENCY_INCREASE;
@@ -398,15 +434,16 @@ public class MainScript : MonoBehaviour
     // Harvesting
     public void StealCow(GameObject cow)
     {
-        Destroy(cow);
+        DestroyInteractableObject(cow);
         playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_COW;
         SetPopupActive(false);
         numberOfCowsLeft--;
+        greenOptionsChosen--;  // Stealing a cow guarantees you can't win the game (not green)
     }
 
     public void HarvestPlant(GameObject plant)
     {
-        Destroy(plant);
+        DestroyInteractableObject(plant);
         playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_LENTIL;
         SetPopupActive(false);
         numberOfPlantsLeft--;
@@ -423,12 +460,14 @@ public class MainScript : MonoBehaviour
                 popupText.text = tagOptions.GetValueOrDefault(key, "");
                 SetPopupActive(true);
 
-                if (key == "Cow") SetOnButtonPressB(() => StealCow(gameObject));
-                else if (key == "Plant") SetOnButtonPressB(() => HarvestPlant(gameObject));
-                else if (key == "Bed") SetOnButtonPressA(() => BeginNewDay(true));
-                else if (key == "EnergyProviderNewspaper") SetOnButtonPressB(DiscoverEnergyProvider);
-                else if (key == "GeothermalNewspaper") SetOnButtonPressB(DiscoverGeothermal);
-                else if (key == "SecurityCamera") SetOnButtonPressB(DiscoverLEDTechnology);
+                if (key == "Cow") SetOnGrabAction(() => StealCow(gameObject));
+                else if (key == "Plant") SetOnGrabAction(() => HarvestPlant(gameObject));
+                else if (key == "Bed") SetOnButtonAction1(() => BeginNewDay(true));
+                else if (key == "EnergyProviderNewspaper") SetOnGrabAction(DiscoverEnergyProvider);
+                else if (key == "GeothermalNewspaper") SetOnGrabAction(DiscoverGeothermal);
+                else if (key == "SecurityCamera") SetOnGrabAction(DiscoverLEDTechnology);
+                else if (key == "GreenNewspaper") SetOnGrabAction(TakeGreenNewspaper);
+                else if (key == "EnemyHouse") SetOnGrabAction(PlaceGreenNewspaper);
                 break;
             }
         }
@@ -437,21 +476,33 @@ public class MainScript : MonoBehaviour
 
     private void TriggerExitAction(GameObject gameObject)
     {
-        if (tagOptions.ContainsKey(gameObject.tag))
+        if (tagOptions.ContainsKey(gameObject.tag) && !largeTextIsActive)
         {
             SetPopupActive(false);
-            onButtonPressA = null;
-            onButtonPressB = null;
+            onButtonAction1 = null;
+            onButtonAction2 = null;
+            onGrabAction = null;
         }
+    }
+
+    private void DestroyInteractableObject(GameObject gameObject)
+    {
+        Destroy(gameObject);
+        TriggerExitAction(gameObject);
     }
     
     // On Actions
-    public void OnButtonPressA(InputAction.CallbackContext context)
+    public void OnButtonAction1(InputAction.CallbackContext context)
     {
         buttonAWasPressed = context.action.triggered;
     }
+
+    public void OnGrabAction(InputAction.CallbackContext context)
+    {
+        grabButtonWasPressed = context.action.triggered;
+    }
     
-    public void OnButtonPressB(InputAction.CallbackContext context)
+    public void OnButtonAction2(InputAction.CallbackContext context)
     {
         buttonBWasPressed = context.action.triggered;
     }
@@ -461,34 +512,37 @@ public class MainScript : MonoBehaviour
         largeText.text = Constants.GAME_OVER_TEXT;
         SetLargeTextCanvasActive(true);
         SetPopupActive(false);
-        
-        SetOnButtonPressA(() =>
-        {
-            SetPopupActive(false);
-            SetLargeTextCanvasActive(false);
+
+        SetOnButtonAction1(ResetGameVariables);
+    }
+
+    private void ResetGameVariables()
+    {
+        SetPopupActive(false);
+        SetLargeTextCanvasActive(false);
             
-            playerMoney = Constants.PLAYER_START_MONEY;
-            enemyMoney = Constants.ENEMY_START_MONEY;
+        playerMoney = Constants.PLAYER_START_MONEY;
+        enemyMoney = Constants.ENEMY_START_MONEY;
             
-            energyCostMultiplier = 1;
-            houseEnergyEfficiency = 1;
-            lightsEnergyEfficiency = 1;
-            playerMoneyBuffer = 0;
-            dayNumber = 1;
-            greenOptionsChosen = 0;
+        energyCostMultiplier = 1;
+        houseEnergyEfficiency = 1;
+        lightsEnergyEfficiency = 1;
+        playerMoneyBuffer = 0;
+        dayNumber = 1;
+        greenOptionsChosen = 0;
             
-            canCallRestartGame = true;
-            hasCollectedGreenNewspaper = false;
+        canCallRestartGame = true;
+        hasCollectedGreenNewspaper = false;
             
-            geothermalNewspaperObject.SetActive(true);
-            energyProviderNewspaperObject.SetActive(true);
-            securityCameraObject.SetActive(true);
+        geothermalNewspaperObject.SetActive(true);
+        energyProviderNewspaperObject.SetActive(true);
+        securityCameraObject.SetActive(true);
             
-            greenNewspaperObject.SetActive(false);
-            greenNewspaper.SetActions(null, null);
+        DisableInteractableObject(greenNewspaperObject);
+        greenNewspaper.SetActions(null, null);
+        enemyHouse.SetActions(null, null);
             
-            BeginNewDay(false);
-        });
+        BeginNewDay(false);
     }
 
     private void SetLargeTextCanvasActive(bool isActive)
@@ -499,6 +553,7 @@ public class MainScript : MonoBehaviour
         }
         
         largeTextCanvas.SetActive(isActive);
+        popup.SetActive(false);
         largeTextIsActive = isActive;
         player.SetIsActive(!isActive);
     }
@@ -519,14 +574,19 @@ Press 'X' to continue";
 
     }
 
-    private void SetOnButtonPressA(Action action)
+    private void SetOnButtonAction1(Action action)
     {
-        onButtonPressA = action;
+        onButtonAction1 = action;
     }
     
-    private void SetOnButtonPressB(Action action)
+    private void SetOnButtonAction2(Action action)
     {
-        onButtonPressB = action;
+        onButtonAction2 = action;
+    }
+
+    private void SetOnGrabAction(Action action)
+    {
+        onGrabAction = action;
     }
 
     private void RunBulletCollision(GameObject bullet)
@@ -538,7 +598,7 @@ Press 'X' to continue";
             SetLargeTextCanvasActive(true);
             largeText.text = Constants.GOT_SHOT_TEXT;
 
-            SetOnButtonPressA(() =>
+            SetOnButtonAction1(() =>
             {
                 BeginNewDay(true);
             });
@@ -548,6 +608,43 @@ Press 'X' to continue";
 
     private float GetPlayerMoneyProportion()
     {
+        if (enemyMoney <= 0)
+        {
+            Debug.Log("ERROR: ENEMY MONEY SHOULD ALWAYS BE POSITIVE, BUT IT IS NEGATIVE!");
+        }
+        
+        enemyMoney = Math.Max(0, enemyMoney);  // To prevent enemy money from being negative
         return playerMoney / (playerMoney + enemyMoney);
+    }
+
+    private void TakeGreenNewspaper()
+    {
+        DisableInteractableObject(greenNewspaperObject);
+        hasCollectedGreenNewspaper = true;
+        SetPopupActive(false);
+        largeText.text = Constants.GREEN_NEWSPAPER_TEXT;
+        SetLargeTextCanvasActive(true);
+        
+        SetOnButtonAction1(() =>
+        {
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+            enemyHouse.SetActions(() => TriggerEnterAction(enemyHouseObject), 
+                () => TriggerExitAction(enemyHouseObject));
+        });
+    }
+
+    private void PlaceGreenNewspaper()
+    {
+        SetLargeTextCanvasActive(true);
+        largeText.text = Constants.GAME_WON_TEXT;
+        SetOnButtonAction1(ResetGameVariables);
+        TriggerExitAction(enemyHouseObject);
+    }
+
+    private void DisableInteractableObject(GameObject gameObject)
+    {
+        gameObject.SetActive(false);
+        TriggerExitAction(gameObject);
     }
 }
