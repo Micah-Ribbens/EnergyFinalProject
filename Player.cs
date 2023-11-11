@@ -33,25 +33,40 @@ public class Player : PlaceableObject
     private int jumpsLeft;
     private float playerSpeed = 10f;
 
-    private bool k = false;
+    private bool hasInstantiated = false;
+    private bool isActive = true;
 
     // Update is called once per frame
     void Update()
     {
-        if (!k)
+        if (!hasInstantiated)
         {
-            jumpsLeft = maxJumps;
-            physicsEquation = new PhysicsEquation(jumpHeight, timeToVertex, 0);
-            controller = GetComponent<CharacterController>();
-            playerJumpVelocity = (float) physicsEquation.velocity;
-            
-            BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
-            boxCollider.isTrigger = true;
-            boxCollider.size = new Vector3(GetXSize(), GetYSize(), GetZSize());
-        
-            boxCollider.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
-            k = true;
+            Instantiate();
         }
+
+        if (isActive)
+        {
+            runGameLogic();
+        }
+    }
+
+    private void Instantiate()
+    {
+        jumpsLeft = maxJumps;
+        physicsEquation = new PhysicsEquation(jumpHeight, timeToVertex, 0);
+        controller = GetComponent<CharacterController>();
+        playerJumpVelocity = (float) physicsEquation.velocity;
+            
+        BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
+        boxCollider.isTrigger = true;
+        boxCollider.size = new Vector3(GetXSize(), GetYSize(), GetZSize());
+        
+        boxCollider.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
+        hasInstantiated = true;
+    }
+
+    private void runGameLogic()
+    {
         isGrounded = controller.isGrounded;
         
         // Movement of player
@@ -83,11 +98,9 @@ public class Player : PlaceableObject
 
         controller.Move(transform.TransformDirection(jumpVector) * Time.deltaTime);
         physicsEquation.UpdateLastTime(Time.deltaTime);
-
-
     }
 
-    public void Jump()
+    private void Jump()
     {
         if (jumpsLeft >= 1)
         {
@@ -115,5 +128,10 @@ public class Player : PlaceableObject
         {
             Jump();
         }
+    }
+
+    public void SetIsActive(bool isActive)
+    {
+        this.isActive = isActive;
     }
 }

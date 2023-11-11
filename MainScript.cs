@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 public class MainScript : MonoBehaviour
 {
@@ -11,16 +12,29 @@ public class MainScript : MonoBehaviour
     private InteractableObject enemyHouse;
     private PlaceableObject playerHouse;
     private PlaceableObject land;
-    private PlaceableObject bed;
+    private InteractableObject bed;
+    private InteractableObject geothermalNewspaper;
+    private InteractableObject energyProviderNewspaper;
+    
+    // GameObject's gotten from Unity Editor
+    public GameObject enemyHouseObject;
+    public GameObject playerHouseObject;
+    public GameObject landObject;
+    public GameObject bedObject;
     public GameObject container;
+    public GameObject geothermalNewspaperObject;
+    public GameObject energyProviderNewspaperObject;
     
     // Constant Variables (Objects)
-    private GameObject enemy;
+    public GameObject enemy;
     public GameObject enemyCannonLeft;
     public GameObject enemyCannonRight;
-    private GameObject player;
-    public TextMeshProUGUI text;
+    public GameObject playerObject;
+    public Player player;
+    public TextMeshProUGUI popupText;
     public GameObject popup;
+    public TextMeshProUGUI largeText;
+    public GameObject largeTextCanvas;
     public GameObject plantPrefab;
     public GameObject bulletPrefab;
     public GameObject cowPrefab;
@@ -28,16 +42,24 @@ public class MainScript : MonoBehaviour
     // Data Management
     private Dictionary<string, string> tagOptions = new Dictionary<string, string>();
     private Dictionary<string, Action> tagToAction = new Dictionary<string, Action>();
-    private InteractableObject[] plants;
-    private InteractableObject[] cows;
+    private InteractableObject[] plants = new InteractableObject[1];
+    private InteractableObject[] cows = new InteractableObject[1];
+    private Action onButtonPressA;
+    private Action onButtonPressB;
+    
+    // Money
+    private int numberOfCowsLeft;
+    private int numberOfPlantsLeft;
     private float playerMoney = Constants.PLAYER_START_MONEY;
     private float enemyMoney = Constants.ENEMY_START_MONEY;
-    private Action onHarvestAction;
-    private Action onOptionBAction;
+    private float playerMoneyBuffer = 0f;
+    
         
     // Other
     private bool hasCalledInitialization = false;
     private float timeWhenEnemyShoots = 0;
+    private bool popupIsActive = false;
+    private bool largeTextIsActive = false;
     
     // Modifiable Values
     private float timeBeforeShooting = 2f;
@@ -45,51 +67,100 @@ public class MainScript : MonoBehaviour
     // Calculated Constant Factors Off By
     private float playerHouseYOffBy = 1.1f;
     private float enemyHouseYOffBy = -0.975f;
-    private float plantYOffBy = -0.284f;
+    private float plantYOffBy = -.1f;
     private float cowYOffBy = 0.05f;
     private float bedYOffBy = -.316f;
     
     // Grid Logic
-    private bool needsToCallGridMethod = false;  // Whether the grid objects have beeen created and grid.turnIntoGrid() was never called
+    private int framesBeforeCallingGridMethod = 2;  // Whether the grid objects have beeen created and grid.turnIntoGrid() was never called
+    
+    // Energy Efficiencies
+    private float houseEnergyEfficiency = 1;
+    private float lightsEnergyEfficiency = 1;
+    private float energyCostMultiplier = 1;
+    private Vector3 playerOriginalPosition;
+
+    private int dayNumber = 1;
+
+    private bool buttonAWasPressed = false;
+    private bool buttonBWasPressed = false;
     
     
     private void Start()
     {
         // Grabbing variables from Unity Hub
-        enemyHouse = GameObject.Find("EnemyHouse").GetComponent<InteractableObject>();
-        playerHouse = GameObject.Find("PlayerHouse").GetComponent<PlaceableObject>();
-        land = GameObject.Find("Land").GetComponent<PlaceableObject>();
-        enemy = GameObject.Find("Enemy");
-        player = GameObject.Find("Player");
-        bed = GameObject.Find("Bed").GetComponent<PlaceableObject>();
+        enemyHouse = enemyHouseObject.GetComponent<InteractableObject>();
+        playerHouse = playerHouseObject.GetComponent<PlaceableObject>();
+        land = landObject.GetComponent<PlaceableObject>();
+        bed = bedObject.GetComponent<InteractableObject>();
+        geothermalNewspaper = geothermalNewspaperObject.GetComponent<InteractableObject>();
+        energyProviderNewspaper = energyProviderNewspaperObject.GetComponent<InteractableObject>();
+        player = playerObject.GetComponent<Player>();
+
+        playerOriginalPosition = player.transform.position;
         
         timeWhenEnemyShoots = Time.time + timeBeforeShooting;
-        popup.SetActive(false);
-        InstantiateGrids();
+        SetPopupActive(false);
+        SetLargeTextCanvasActive(false);
+        BeginNewDay(false);
+        
+        // Tags
+        tagOptions.Add("Cow", "Press 'A' to Steal Cow");    
+        tagOptions.Add("Plant", "Press 'A' to Harvest Plant");    
+        tagOptions.Add("DiscoverableObject", "Press 'A' to Discover Technology");
+        tagOptions.Add("Bed", "Press 'A' to Start New Day");
     }
-
+    
     private void Update()
     {
+        framesBeforeCallingGridMethod--;
+        
+        if (framesBeforeCallingGridMethod == 0)
+        {
+            PutIntoGrids();
+        }
+        
+        if (playerMoney <= 0)
+        {
+            RestartGame();
+            return;
+        }
+
+        if (buttonAWasPressed && onButtonPressA != null)
+        {
+            buttonAWasPressed = false;
+            onButtonPressA();
+        }
+
+        if (buttonBWasPressed && onButtonPressB != null)
+        {
+            buttonBWasPressed = false;
+            onButtonPressB();
+        }
+        
+        if (largeTextIsActive)
+        {
+            return;
+        }
+        
         if (!hasCalledInitialization)
         {
             Initialize();
             hasCalledInitialization = true;
         }
 
-        if (needsToCallGridMethod)
-        {
-            PutIntoGrids();
-        }
+
+        
         runEnemyLogic();
     }
 
     private void runEnemyLogic()
     {
-        Vector3 playerPosition = player.transform.position;
+        Vector3 playerPosition = playerObject.transform.position;
         Vector3 enemyPosition = enemy.transform.position;
         Vector3 movementVector = new Vector3(playerPosition.x - enemyPosition.x, 0, playerPosition.z - enemyPosition.z);
 
-        if (movementVector.magnitude > 2)  // If the enemy is close to the player - do not move to the player
+        if (movementVector.magnitude > 2)  // If the enemy is close to the playerObject - do not move to the playerObject
         {
             movementVector.Normalize();
             
@@ -122,46 +193,13 @@ public class MainScript : MonoBehaviour
 
     private void Initialize()
     {
-        enemyHouse.SetActions(() => TriggerEnterAction(enemyHouse), () => TriggerExitAction(enemyHouse.gameObject));
+        bed.SetActions(() => TriggerEnterAction(bed.gameObject), () => TriggerExitAction(bed.gameObject));
         enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + enemyHouseYOffBy, enemyHouse.GetZBeginningEdge());
         playerHouse.Place(playerHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + playerHouseYOffBy, playerHouse.GetZBeginningEdge());
         bed.Place(bed.GetXBeginningEdge(), land.GetYBeginningEdge() + bedYOffBy, bed.GetZBeginningEdge());
     }
 
-    private void TriggerEnterAction(InteractableObject interactableObject)
-    {
-        if (!tagOptions.ContainsKey("Cow"))
-        {
-            tagOptions.Add("Cow", "Press 'A' to Steal Cow");    
-            tagOptions.Add("Plant", "Press 'A' to Harvest Plant");    
-            tagOptions.Add("Discoverable Object", "Press 'A' to Discover Technology");
-            
-            // tagToAction.Add("Cow", () => StealCow(gameObject));    
-            // tagToAction.Add("Plant", () => HarvestPlant(gameObject));    
-            // tagToAction.Add("Discoverable Object", () => { });
-        }
-        
-        foreach (var key in tagOptions.Keys)
-        {
-            if (interactableObject.gameObject.CompareTag(key))
-            {
-                text.text = tagOptions.GetValueOrDefault(key, "");
-                popup.SetActive(true);
 
-                if (key == "Cow") onHarvestAction = () => StealCow(interactableObject.gameObject);
-                if (key == "Plant") onHarvestAction = () => HarvestPlant(interactableObject.gameObject);
-                break;
-            }
-        }
-    }
-
-    private void TriggerExitAction(GameObject gameObject)
-    {
-        if (tagOptions.ContainsKey(gameObject.tag))
-        {
-            popup.SetActive(false);
-        }
-    }
 
     private void InstantiateGrids()
     {
@@ -173,29 +211,66 @@ public class MainScript : MonoBehaviour
         cows = new InteractableObject[1];
         InstantiateGrid(cows, cowPrefab);
 
-        needsToCallGridMethod = true;
+
+        framesBeforeCallingGridMethod = 2;
+        enemyMoney -= Constants.COST_TO_PLANT_COW * numberOfPlants;
+        playerMoney -= Constants.COST_TO_PLANT_LENTIL * numberOfPlants;
+
+        numberOfCowsLeft = numberOfCows;
+        numberOfPlantsLeft = numberOfPlants;
+
     }
 
     private void InstantiateGrid(InteractableObject[] interactableObjects, GameObject prefab)
     {
         for (int i = 0; i < interactableObjects.Length; i++)
         {
-            interactableObjects[i] = Instantiate(prefab, transform.position, Quaternion.identity).GetComponent<InteractableObject>();
+            interactableObjects[i] = Instantiate(prefab).GetComponent<InteractableObject>();
             InteractableObject obj = interactableObjects[i];
             obj.transform.parent = container.transform;
-            obj.SetActions(() => TriggerEnterAction(obj), 
-                                            () => TriggerExitAction(obj.gameObject));
+            obj.SetActions(() => TriggerEnterAction(obj.gameObject), 
+                            () => TriggerExitAction(obj.gameObject));
             
         }
+    }
+
+    private void BeginNewDay(bool calculateMoney)
+    {
+        SetLargeTextCanvasActive(true);
+        largeText.text = GetDayStartText();
+
+        SetOnButtonPressA(() =>
+        {
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+        });
         
+        foreach (InteractableObject interactableObject in cows)
+        {
+            if (interactableObject != null) Destroy(interactableObject.gameObject);
+        }
+        
+        foreach (InteractableObject interactableObject in plants)
+        {
+            if (interactableObject != null) Destroy(interactableObject.gameObject);
+        }
+
+        if (calculateMoney)
+        {
+            enemyMoney += (Constants.PROFIT_FROM_HARVESTING_COW + Constants.COST_TO_PLANT_COW) * numberOfCowsLeft;
+            enemyMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL * numberOfPlantsLeft;
+            playerMoney += playerMoneyBuffer;
+            playerMoneyBuffer = 0;
+        }
+
+        InstantiateGrids();
+        dayNumber++;
     }
 
     private void PutIntoGrids()
     {
         PutIntoGrid(cows, 30f, 30f, cowYOffBy);
         PutIntoGrid(plants, 0f, 0f, plantYOffBy);
-        
-        needsToCallGridMethod = false;
     }
 
     private void PutIntoGrid(InteractableObject[] interactableObjects, float xStartEdge, float zStartEdge, float yOffBy)
@@ -208,41 +283,176 @@ public class MainScript : MonoBehaviour
         grid.TurnIntoGrid(interactableObjects, interactableObject.GetXSize(), interactableObject.GetZSize(), land.GetYBeginningEdge() + yOffBy);
     }
     
+    // Technology
+    private void DiscoverGeothermal()
+    {
+        SetLargeTextCanvasActive(true);
+        largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT;
+        SetPopupActive(false);
+
+        SetOnButtonPressA(() =>
+        {
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+            houseEnergyEfficiency -= Constants.GEOTHERMAL_EFFICIENCY_INCREASE;
+        });
+        
+        SetOnButtonPressB(() =>
+        {
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+        });
+
+    }
+    
+    private void DiscoverEnergyProvider()
+    {
+        SetLargeTextCanvasActive(true);
+        largeText.text = Constants.ENERGY_PROVIDER_NEWSPAPER_TEXT;
+        SetPopupActive(false);
+
+        SetOnButtonPressA(() =>
+        {
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+            energyCostMultiplier = Constants.LIGHTNING_ENERGY_PROVIDER_COST_MULTIPLIER;
+        });
+        
+        SetOnButtonPressB(() =>
+        {
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+            energyCostMultiplier = Constants.TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER;
+        });
+
+    }
+
+    private void DiscoverLEDTechnology()
+    {
+        SetLargeTextCanvasActive(true);
+        largeText.text = Constants.LED_CAMERA_TEXT;
+        SetPopupActive(false);
+
+        SetOnButtonPressA(() =>
+        {
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+            lightsEnergyEfficiency -= Constants.LED_LIGHT_EFFICIENCY_INCREASE;
+
+        });
+    }
+    
     // Harvesting
     public void StealCow(GameObject cow)
     {
         Destroy(cow);
-        playerMoney += Constants.PROFIT_FROM_HARVESTING_COW;
-        popup.SetActive(false);
+        playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_COW;
+        SetPopupActive(false);
+        numberOfCowsLeft--;
     }
 
     public void HarvestPlant(GameObject plant)
     {
         Destroy(plant);
-        playerMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL;
-        popup.SetActive(false);
+        playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_LENTIL;
+        SetPopupActive(false);
+        numberOfPlantsLeft--;
+    }
+    
+    private void TriggerEnterAction(GameObject gameObject)
+    {
+        if (largeTextIsActive) return;
+        
+        foreach (var key in tagOptions.Keys)
+        {
+            if (gameObject.CompareTag(key))
+            {
+                popupText.text = tagOptions.GetValueOrDefault(key, "");
+                SetPopupActive(true);
+
+                if (key == "Cow") SetOnButtonPressA(() => StealCow(gameObject));
+                else if (key == "Plant") SetOnButtonPressA(() => HarvestPlant(gameObject));
+                else if (key == "Bed") SetOnButtonPressA(() => BeginNewDay(true));
+                else if (key == "EnergyProviderNewspaper") SetOnButtonPressA(DiscoverEnergyProvider);
+                else if (key == "GeothermalNewspaper") SetOnButtonPressA(DiscoverGeothermal);
+                break;
+            }
+        }
+    }
+
+
+    private void TriggerExitAction(GameObject gameObject)
+    {
+        if (tagOptions.ContainsKey(gameObject.tag))
+        {
+            SetPopupActive(false);
+        }
     }
     
     // On Actions
-    public void OnHarvest(InputAction.CallbackContext context)
+    public void OnButtonPressA(InputAction.CallbackContext context)
     {
-        if (context.action.triggered)
-        {
-            if (onHarvestAction != null)
-            {
-                onHarvestAction();
-            }
-        }
+        buttonAWasPressed = context.action.triggered;
     }
     
-    public void OnOptionB(InputAction.CallbackContext context)
+    public void OnButtonPressB(InputAction.CallbackContext context)
     {
-        if (context.action.triggered)
+        buttonBWasPressed = context.action.triggered;
+    }
+
+    private void RestartGame()
+    {
+        largeText.text = Constants.GAME_OVER_TEXT;
+        SetLargeTextCanvasActive(true);
+        SetPopupActive(false);
+        
+        SetOnButtonPressA(() =>
         {
-            if (onOptionBAction != null)
-            {
-                onOptionBAction();
-            }
-        }
+            SetPopupActive(false);
+            timeWhenEnemyShoots = Time.time + timeBeforeShooting;
+            SetLargeTextCanvasActive(false);
+            playerMoney = Constants.PLAYER_START_MONEY;
+            enemyMoney = Constants.ENEMY_START_MONEY;
+            energyCostMultiplier = 1;
+            houseEnergyEfficiency = 1;
+            lightsEnergyEfficiency = 1;
+            playerMoneyBuffer = 0;
+            BeginNewDay(false);
+            playerObject.SetActive(true);
+            playerObject.transform.position = playerOriginalPosition;
+        });
+    }
+
+    private void SetLargeTextCanvasActive(bool isActive)
+    {
+        largeTextCanvas.SetActive(isActive);
+        largeTextIsActive = isActive;
+        player.SetIsActive(!isActive);
+    }
+
+    private void SetPopupActive(bool isActive)
+    {
+        popup.SetActive(isActive);
+        popupIsActive = isActive;
+    }
+
+    private string GetDayStartText()
+    {
+        if (dayNumber == 1) return Constants.DAY_1_TEXT;
+
+        return "Day Number " + dayNumber + @". I have still not succeeded in stopping that cow farmer. I must continue trying.
+
+Press 'A' to continue";
+
+    }
+
+    private void SetOnButtonPressA(Action action)
+    {
+        onButtonPressA = action;
+    }
+    
+    private void SetOnButtonPressB(Action action)
+    {
+        onButtonPressB = action;
     }
 }

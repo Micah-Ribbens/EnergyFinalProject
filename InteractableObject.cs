@@ -21,12 +21,6 @@ public class InteractableObject : PlaceableObject
 
     private void Instantiate()
     {
-        BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
-        boxCollider.isTrigger = true;
-        PlaceableObject player = GameObject.Find("Player").GetComponent<PlaceableObject>();
-        distanceNeeded = playerDistanceBeforeInteractable;
-        
-        boxCollider.size = new Vector3(boxCollider.size.x + distanceNeeded, boxCollider.size.y + distanceNeeded, boxCollider.size.z + distanceNeeded);
     }
 
     private void OnTriggerEnter(Collider other)

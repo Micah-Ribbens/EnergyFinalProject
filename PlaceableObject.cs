@@ -21,6 +21,11 @@ public class PlaceableObject : MonoBehaviour
         float xPosition = x + xSize / 2;
         float yPosition = y + ySize / 2;
         float zPosition = z + zSize / 2;
+
+        if (this == null)
+        {
+            return;
+        }
         
         transform.position = new Vector3(xPosition, yPosition, zPosition);
     }
