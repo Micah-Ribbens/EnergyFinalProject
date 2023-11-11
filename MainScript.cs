@@ -84,6 +84,7 @@ public class MainScript : MonoBehaviour
 
     private bool buttonAWasPressed = false;
     private bool buttonBWasPressed = false;
+    private bool canCallRestartGame = true;
     
     
     private void Start()
@@ -120,9 +121,10 @@ public class MainScript : MonoBehaviour
             PutIntoGrids();
         }
         
-        if (playerMoney <= 0)
+        if (playerMoney <= 0 && canCallRestartGame)
         {
             RestartGame();
+            canCallRestartGame = false;
             return;
         }
 
@@ -236,15 +238,6 @@ public class MainScript : MonoBehaviour
 
     private void BeginNewDay(bool calculateMoney)
     {
-        SetLargeTextCanvasActive(true);
-        largeText.text = GetDayStartText();
-
-        SetOnButtonPressA(() =>
-        {
-            SetLargeTextCanvasActive(false);
-            SetPopupActive(popupIsActive);
-        });
-        
         foreach (InteractableObject interactableObject in cows)
         {
             if (interactableObject != null) Destroy(interactableObject.gameObject);
@@ -262,6 +255,18 @@ public class MainScript : MonoBehaviour
             playerMoney += playerMoneyBuffer;
             playerMoneyBuffer = 0;
         }
+
+        if (playerMoney == 0) return;
+        
+        SetLargeTextCanvasActive(true);
+        largeText.text = GetDayStartText();
+
+        SetOnButtonPressA(() =>
+        {
+            Debug.Log("New Day Stuff");
+            SetLargeTextCanvasActive(false);
+            SetPopupActive(popupIsActive);
+        });
 
         InstantiateGrids();
         dayNumber++;
@@ -292,6 +297,7 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
+            Debug.Log("Geothermal Stuff");
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             houseEnergyEfficiency -= Constants.GEOTHERMAL_EFFICIENCY_INCREASE;
@@ -313,6 +319,7 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
+            Debug.Log("Energy Provider");
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             energyCostMultiplier = Constants.LIGHTNING_ENERGY_PROVIDER_COST_MULTIPLIER;
@@ -335,6 +342,7 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonPressA(() =>
         {
+            Debug.Log("LED Stuff");
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
             lightsEnergyEfficiency -= Constants.LED_LIGHT_EFFICIENCY_INCREASE;
@@ -408,6 +416,7 @@ public class MainScript : MonoBehaviour
         
         SetOnButtonPressA(() =>
         {
+            Debug.Log("Restart Stuff");
             SetPopupActive(false);
             timeWhenEnemyShoots = Time.time + timeBeforeShooting;
             SetLargeTextCanvasActive(false);
@@ -420,6 +429,8 @@ public class MainScript : MonoBehaviour
             BeginNewDay(false);
             playerObject.SetActive(true);
             playerObject.transform.position = playerOriginalPosition;
+            canCallRestartGame = true;
+            dayNumber = 1;
         });
     }
 

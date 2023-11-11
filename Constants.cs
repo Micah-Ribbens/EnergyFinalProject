@@ -22,7 +22,7 @@ public static class Constants
     public static float TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER = 1.2f;
     
     // Money
-    public static int PLAYER_START_MONEY = 100_000;
+    public static int PLAYER_START_MONEY = 10_000;
     public static int ENEMY_START_MONEY = 1_000_000;
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5;
     public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .1;
