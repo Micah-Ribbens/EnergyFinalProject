@@ -3,8 +3,9 @@
 public static class Constants
 {
     // Energy Costs
-    public static float LIGHT_ENERGY_COST_PER_MINUTE = 100;
-    public static float HVAC_SYSTEM_COST_PER_MINUTE = 200;
+    public static float LIGHT_ENERGY_COST_PER_MINUTE = 1_000;
+    public static float HVAC_SYSTEM_COST_PER_MINUTE = 2_000;
+    public static float TIME_UNTIL_PLAYER_LOSES_MONEY = 5f;
     
     // Cost Per Item
     public static float COST_TO_PLANT_LENTIL = 5_000;

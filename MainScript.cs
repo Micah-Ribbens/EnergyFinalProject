@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 // TODO fix button mapping glitch!
 public class MainScript : MonoBehaviour
@@ -71,8 +72,9 @@ public class MainScript : MonoBehaviour
     private int greenOptionsNeeded = 3;
     
     // Modifiable Values
-    private float timeBeforeShooting = 5f;
-    private float delayAfterSpawningForEnemyShooting = 10f;
+    private float timeBeforeShooting = 3f;
+    private float delayAfterSpawningForEnemyShooting = 5f;
+    private float timeLeftUntilPlayerLosesMoney = Constants.TIME_UNTIL_PLAYER_LOSES_MONEY;
     
     // Calculated Constant Factors Off By
     private float playerHouseYOffBy = 1.1f;
@@ -96,7 +98,24 @@ public class MainScript : MonoBehaviour
     private bool buttonBWasPressed = false;
     private bool canCallRestartGame = true;
     
-    
+    // HUD Variables
+    public Image piggyBankGreenFill;
+    public Image piggyBankRedFill;
+    public Canvas piggyBankCanvas;
+
+    public Image moneyProportionGreenFill;
+    public Image moneyProportionRedFill;
+    public GameObject moneyProportionCanvas;
+
+    public Image enemyShootingUIFill;
+    public Canvas enemyShootingUICanvas;
+
+    private Image[] hudImages;
+    private float[] offsets = { 130 - 47,  130 - 47, 130 - 30};
+    private float totalEnemyShootTime = 0;
+    private float energyUtilsCost = 0;
+
+
     private void Start()
     {
         // Grabbing variables from Unity Hub
@@ -113,10 +132,9 @@ public class MainScript : MonoBehaviour
         enemyStartingPosition = enemy.transform.position;
         playerStartPosition = player.transform.position;
         
-        timeWhenEnemyShoots = Time.time + timeBeforeShooting;
         SetPopupActive(false);
         SetLargeTextCanvasActive(false);
-        BeginNewDay(false);
+        BeginNewDay(false, true);
         greenNewspaperObject.SetActive(false);
         
         // Tags
@@ -128,7 +146,9 @@ public class MainScript : MonoBehaviour
         tagOptions.Add("Bed", "Press 'X' to Start New Day");
         tagOptions.Add("GreenNewspaper", "Press 'B' To Collect Tree Hugger Newsletter");
         tagOptions.Add("EnemyHouse", "Press 'B' To Place Tree Hugger Newsletter");
-        
+        hudImages = new Image[] { moneyProportionRedFill, piggyBankRedFill, enemyShootingUIFill };
+
+
     }
     
     private void Update()
@@ -139,15 +159,27 @@ public class MainScript : MonoBehaviour
         {
             RestartGame();
             canCallRestartGame = false;
-        }
-        // RunButtonLogic();
-        else if (!largeTextIsActive)
+        } else if (!largeTextIsActive)
         {
-            runEnemyLogic();
-        }
-        
+            RunEnemyLogic();
+            
+            timeLeftUntilPlayerLosesMoney -= Time.deltaTime;
 
-        
+            if (timeLeftUntilPlayerLosesMoney <= 0)
+            {
+                float proportion = Constants.TIME_UNTIL_PLAYER_LOSES_MONEY / 60f;  // Proportion of a minute
+                float hvacCost = Constants.HVAC_SYSTEM_COST_PER_MINUTE * proportion * houseEnergyEfficiency;
+                float lightsCost = Constants.LIGHT_ENERGY_COST_PER_MINUTE * proportion * numberOfPlantsLeft;
+                float totalCost = (hvacCost + lightsCost) * energyCostMultiplier;
+                
+                playerMoney -= totalCost;
+                timeLeftUntilPlayerLosesMoney = Constants.TIME_UNTIL_PLAYER_LOSES_MONEY;
+
+                energyUtilsCost += totalCost;
+            }
+
+            RunHUDLogic();
+        }
     }
 
     private void RunEveryFrame()
@@ -192,7 +224,7 @@ public class MainScript : MonoBehaviour
         
     }
 
-    private void runEnemyLogic()
+    private void RunEnemyLogic()
     {
         Vector3 playerPosition = playerObject.transform.position;
         Vector3 enemyPosition = enemy.transform.position;
@@ -230,7 +262,7 @@ public class MainScript : MonoBehaviour
             bullet1Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet1));
             bullet2Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet2));
             
-            timeWhenEnemyShoots = Time.time + timeBeforeShooting;
+            SetEnemyShootTime(timeBeforeShooting);
         }
         
     }
@@ -284,8 +316,12 @@ public class MainScript : MonoBehaviour
         }
     }
 
-    private void BeginNewDay(bool calculateMoney)
+    private void BeginNewDay(bool calculateMoney, bool shouldGiveText)
     {
+        // This must be here, so resetting the variables does not mess up the calculations
+        string dayStartText = GetDayStartText();
+        energyUtilsCost = 0;
+        
         if (calculateMoney)
         {
             enemyMoney += (Constants.PROFIT_FROM_HARVESTING_COW + Constants.COST_TO_PLANT_COW) * numberOfCowsLeft;
@@ -295,8 +331,6 @@ public class MainScript : MonoBehaviour
         }
         
         UpdateGridsForNewDay();
-        Debug.Log("money good: " + (GetPlayerMoneyProportion() >= .5f));
-        Debug.Log("Green options good: " + (greenOptionsChosen == greenOptionsNeeded));
 
         if (GetPlayerMoneyProportion() >= .5f && greenOptionsChosen == greenOptionsNeeded)
         {
@@ -313,10 +347,13 @@ public class MainScript : MonoBehaviour
 
         if (enemyMoney > 0)
         {
-            SetLargeTextCanvasActive(true);
-            largeText.text = GetDayStartText();
-
-            SetOnButtonAction1(NewDayButtonAction);
+            if (shouldGiveText)
+            {
+                SetLargeTextCanvasActive(true);
+                largeText.text = dayStartText;
+                SetOnButtonAction1(NewDayButtonAction);
+            }
+            
             dayNumber++;
         }
         
@@ -342,7 +379,7 @@ public class MainScript : MonoBehaviour
     {
         SetLargeTextCanvasActive(false);
         SetPopupActive(popupIsActive);
-        timeWhenEnemyShoots = delayAfterSpawningForEnemyShooting + timeBeforeShooting + Time.time;
+        SetEnemyShootTime(delayAfterSpawningForEnemyShooting + timeBeforeShooting);
         enemy.transform.position = enemyStartingPosition;
         player.SetPosition(playerStartPosition);
     }
@@ -444,7 +481,7 @@ public class MainScript : MonoBehaviour
     public void HarvestPlant(GameObject plant)
     {
         DestroyInteractableObject(plant);
-        playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_LENTIL;
+        playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_LENTIL + Constants.COST_TO_PLANT_LENTIL;
         SetPopupActive(false);
         numberOfPlantsLeft--;
     }
@@ -462,7 +499,7 @@ public class MainScript : MonoBehaviour
 
                 if (key == "Cow") SetOnGrabAction(() => StealCow(gameObject));
                 else if (key == "Plant") SetOnGrabAction(() => HarvestPlant(gameObject));
-                else if (key == "Bed") SetOnButtonAction1(() => BeginNewDay(true));
+                else if (key == "Bed") SetOnButtonAction1(() => BeginNewDay(true, true));
                 else if (key == "EnergyProviderNewspaper") SetOnGrabAction(DiscoverEnergyProvider);
                 else if (key == "GeothermalNewspaper") SetOnGrabAction(DiscoverGeothermal);
                 else if (key == "SecurityCamera") SetOnGrabAction(DiscoverLEDTechnology);
@@ -542,20 +579,21 @@ public class MainScript : MonoBehaviour
         greenNewspaper.SetActions(null, null);
         enemyHouse.SetActions(null, null);
             
-        BeginNewDay(false);
+        BeginNewDay(false, true);
     }
 
     private void SetLargeTextCanvasActive(bool isActive)
     {
         if (!isActive && largeTextIsActive)
         {
-            timeWhenEnemyShoots = Time.time + timeBeforeShooting;
+            SetEnemyShootTime(timeBeforeShooting);
         }
         
         largeTextCanvas.SetActive(isActive);
         popup.SetActive(false);
         largeTextIsActive = isActive;
         player.SetIsActive(!isActive);
+        SetHUDActive(!isActive);
     }
 
     private void SetPopupActive(bool isActive)
@@ -568,9 +606,8 @@ public class MainScript : MonoBehaviour
     {
         if (dayNumber == 1) return Constants.DAY_1_TEXT;
 
-        return "Day Number " + dayNumber + @". I have still not succeeded in stopping that cow farmer. I must continue trying.
-
-Press 'X' to continue";
+        return "Day Number " + dayNumber + ". I have still not succeeded in stopping that cow farmer." +
+               " I must continue trying. Day End Numbers:" + GetDayEndNumbers(false);
 
     }
 
@@ -593,14 +630,15 @@ Press 'X' to continue";
     {
         if (!largeTextIsActive)
         {
+            SetLargeTextCanvasActive(true);
+            largeText.text = Constants.GOT_SHOT_TEXT + GetDayEndNumbers(true);
+            
             numberOfCowsLeft = cows.Length;
             numberOfPlantsLeft = plants.Length;
-            SetLargeTextCanvasActive(true);
-            largeText.text = Constants.GOT_SHOT_TEXT;
 
             SetOnButtonAction1(() =>
             {
-                BeginNewDay(true);
+                BeginNewDay(true, false);
             });
         }
         Destroy(bullet);
@@ -610,7 +648,6 @@ Press 'X' to continue";
     {
         if (enemyMoney <= 0)
         {
-            Debug.Log("ERROR: ENEMY MONEY SHOULD ALWAYS BE POSITIVE, BUT IT IS NEGATIVE!");
         }
         
         enemyMoney = Math.Max(0, enemyMoney);  // To prevent enemy money from being negative
@@ -647,4 +684,68 @@ Press 'X' to continue";
         gameObject.SetActive(false);
         TriggerExitAction(gameObject);
     }
+
+    private void SetHUDActive(bool isActive)
+    {
+        piggyBankCanvas.gameObject.SetActive(isActive);
+        enemyShootingUICanvas.gameObject.SetActive(isActive);
+        moneyProportionCanvas.SetActive(isActive);
+    }
+    
+    // UI Code
+    private void RunHUDLogic()
+    {
+        float timeRemaining = Math.Max(timeWhenEnemyShoots - Time.time, 0f);
+        float enemyShootTimeProportion = 1 - (timeRemaining / totalEnemyShootTime);
+
+        float plantsTotalMoney = (Constants.PROFIT_FROM_HARVESTING_LENTIL + Constants.COST_TO_PLANT_LENTIL) * plants.Length;
+        float cowTotalMoney = Constants.PROFIT_FROM_HARVESTING_COW * cows.Length;
+        
+        float piggyBankProportion = playerMoneyBuffer / (plantsTotalMoney + cowTotalMoney);
+
+        float[] values = {GetPlayerMoneyProportion(), 1 - piggyBankProportion, -enemyShootTimeProportion};
+        // float[] values = { .5f, .5f, -0.5f };
+        
+        SetHUDFills(values);
+    }
+
+    private void SetHUDFills(float[] values)
+    {
+        for (int i = 0; i < hudImages.Length; i++)
+        {
+            float value = values[i];
+            Image image = hudImages[i];
+            
+            float constFactor = 20;
+            float xPos =  (1 - Math.Abs(value)) * constFactor;
+
+            if (value < 0) xPos = -xPos;  // So the negative is "kept"
+                
+            Vector2 pos = image.rectTransform.anchoredPosition;
+            image.rectTransform.anchoredPosition = new Vector2(xPos, pos.y);
+
+            Vector3 previousScale = image.rectTransform.localScale;
+            image.rectTransform.localScale = new Vector3(Math.Abs(value), previousScale.y, previousScale.z);
+        }
+    }
+
+    private void SetEnemyShootTime(float time)
+    {
+        timeWhenEnemyShoots = Time.time + time;
+        totalEnemyShootTime = time;
+    }
+
+    private string GetDayEndNumbers(bool hasBeenShot)
+    {
+        float cost = plants.Length * Constants.COST_TO_PLANT_LENTIL;
+        float profit = playerMoneyBuffer - cost;
+
+        if (hasBeenShot) profit = -cost;
+        
+            
+        return "\n\nPlayer Money Buffer " + playerMoneyBuffer + "\nLentils Harvested: " + (plants.Length - numberOfPlantsLeft) +
+               "\nCows Stolen: " + (cows.Length - numberOfCowsLeft) + "\nEnergy Utils Cost: " + energyUtilsCost + 
+               "\nTotal Profit: " + profit + "\n\nPress 'X' to continue";
+    }
+    
 }
