@@ -60,7 +60,7 @@ public class MainScript : MonoBehaviour
     private int numberOfPlantsLeft;
     private float playerMoney = Constants.PLAYER_START_MONEY;
     private float enemyMoney = Constants.ENEMY_START_MONEY;
-    private float playerMoneyBuffer = 0f;
+    private float moneyInBank = 0f;
 
     // Other
     private bool hasCalledInitialization = false;
@@ -114,6 +114,8 @@ public class MainScript : MonoBehaviour
     private float[] offsets = { 130 - 47,  130 - 47, 130 - 30};
     private float totalEnemyShootTime = 0;
     private float energyUtilsCost = 0;
+
+    private float enemySpeed = 8f;
 
 
     private void Start()
@@ -235,7 +237,7 @@ public class MainScript : MonoBehaviour
             movementVector.Normalize();
             
             // Going from a direction that is in world terms to my "local space"
-            enemy.transform.Translate(movementVector * Time.deltaTime * 5f, Space.World);
+            enemy.transform.Translate(movementVector * Time.deltaTime * enemySpeed, Space.World);
             
             double yRotation = Math.Atan2(movementVector.x, movementVector.z) * 180.0 / Math.PI;
             enemy.transform.eulerAngles = new Vector3(enemy.transform.eulerAngles.x,
@@ -326,13 +328,14 @@ public class MainScript : MonoBehaviour
         {
             enemyMoney += (Constants.PROFIT_FROM_HARVESTING_COW + Constants.COST_TO_PLANT_COW) * numberOfCowsLeft;
             enemyMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL * numberOfPlantsLeft;
-            playerMoney += playerMoneyBuffer;
-            playerMoneyBuffer = 0;
+            playerMoney += moneyInBank;
+            moneyInBank = 0;
         }
         
         UpdateGridsForNewDay();
 
-        if (GetPlayerMoneyProportion() >= .5f && greenOptionsChosen == greenOptionsNeeded)
+        if (GetPlayerMoneyProportion() >= Constants.MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER 
+            && greenOptionsChosen == greenOptionsNeeded)
         {
             greenNewspaper.SetActions(() => TriggerEnterAction(greenNewspaperObject),
                                         () => TriggerExitAction(greenNewspaperObject));
@@ -352,6 +355,9 @@ public class MainScript : MonoBehaviour
                 SetLargeTextCanvasActive(true);
                 largeText.text = dayStartText;
                 SetOnButtonAction1(NewDayButtonAction);
+            } else
+            {
+                NewDayButtonAction();
             }
             
             dayNumber++;
@@ -472,7 +478,7 @@ public class MainScript : MonoBehaviour
     public void StealCow(GameObject cow)
     {
         DestroyInteractableObject(cow);
-        playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_COW;
+        moneyInBank += Constants.PROFIT_FROM_HARVESTING_COW;
         SetPopupActive(false);
         numberOfCowsLeft--;
         greenOptionsChosen--;  // Stealing a cow guarantees you can't win the game (not green)
@@ -481,7 +487,7 @@ public class MainScript : MonoBehaviour
     public void HarvestPlant(GameObject plant)
     {
         DestroyInteractableObject(plant);
-        playerMoneyBuffer += Constants.PROFIT_FROM_HARVESTING_LENTIL + Constants.COST_TO_PLANT_LENTIL;
+        moneyInBank += Constants.PROFIT_FROM_HARVESTING_LENTIL + Constants.COST_TO_PLANT_LENTIL;
         SetPopupActive(false);
         numberOfPlantsLeft--;
     }
@@ -564,7 +570,7 @@ public class MainScript : MonoBehaviour
         energyCostMultiplier = 1;
         houseEnergyEfficiency = 1;
         lightsEnergyEfficiency = 1;
-        playerMoneyBuffer = 0;
+        moneyInBank = 0;
         dayNumber = 1;
         greenOptionsChosen = 0;
             
@@ -639,7 +645,9 @@ public class MainScript : MonoBehaviour
             SetOnButtonAction1(() =>
             {
                 BeginNewDay(true, false);
+                SetLargeTextCanvasActive(false);
             });
+            
         }
         Destroy(bullet);
     }
@@ -651,6 +659,7 @@ public class MainScript : MonoBehaviour
         }
         
         enemyMoney = Math.Max(0, enemyMoney);  // To prevent enemy money from being negative
+        
         return playerMoney / (playerMoney + enemyMoney);
     }
 
@@ -701,9 +710,9 @@ public class MainScript : MonoBehaviour
         float plantsTotalMoney = (Constants.PROFIT_FROM_HARVESTING_LENTIL + Constants.COST_TO_PLANT_LENTIL) * plants.Length;
         float cowTotalMoney = Constants.PROFIT_FROM_HARVESTING_COW * cows.Length;
         
-        float piggyBankProportion = playerMoneyBuffer / (plantsTotalMoney + cowTotalMoney);
+        float piggyBankProportion = moneyInBank / (plantsTotalMoney + cowTotalMoney);
 
-        float[] values = {GetPlayerMoneyProportion(), 1 - piggyBankProportion, -enemyShootTimeProportion};
+        float[] values = {1 - GetPlayerMoneyProportion(), 1 - piggyBankProportion, -enemyShootTimeProportion};
         // float[] values = { .5f, .5f, -0.5f };
         
         SetHUDFills(values);
@@ -737,15 +746,19 @@ public class MainScript : MonoBehaviour
 
     private string GetDayEndNumbers(bool hasBeenShot)
     {
-        float cost = plants.Length * Constants.COST_TO_PLANT_LENTIL;
-        float profit = playerMoneyBuffer - cost;
+        float cost = plants.Length * Constants.COST_TO_PLANT_LENTIL + energyUtilsCost;
+        float profit = moneyInBank - cost;
 
         if (hasBeenShot) profit = -cost;
+
+        int convertedUtilsCost = (int) (energyUtilsCost / Constants.DIVIDE_FACTOR);
+        int convertedProfit = (int) (profit / Constants.DIVIDE_FACTOR);
+        int convertedMoneyInBank = (int)(moneyInBank / Constants.DIVIDE_FACTOR);
         
             
-        return "\n\nPlayer Money Buffer " + playerMoneyBuffer + "\nLentils Harvested: " + (plants.Length - numberOfPlantsLeft) +
-               "\nCows Stolen: " + (cows.Length - numberOfCowsLeft) + "\nEnergy Utils Cost: " + energyUtilsCost + 
-               "\nTotal Profit: " + profit + "\n\nPress 'X' to continue";
+        return "\n\nMoney In Piggy Bank: $" + convertedMoneyInBank + "\nLentils Harvested: " + (plants.Length - numberOfPlantsLeft) +
+               "\nCows Stolen: " + (cows.Length - numberOfCowsLeft) + "\nEnergy Utils Cost: $" + convertedUtilsCost + 
+               "\nTotal Profit: $" + convertedProfit + "\n\nPress 'X' to continue";
     }
     
 }

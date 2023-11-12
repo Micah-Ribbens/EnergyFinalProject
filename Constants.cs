@@ -6,15 +6,15 @@ public static class Constants
     public static float LIGHT_ENERGY_COST_PER_MINUTE = 1_000;
     public static float HVAC_SYSTEM_COST_PER_MINUTE = 2_000;
     public static float TIME_UNTIL_PLAYER_LOSES_MONEY = 5f;
+    public static float DIVIDE_FACTOR = 200;  // Divide factor to present money costs to user (1_000 too large, but 1 is reasonable)
     
     // Cost Per Item
     public static float COST_TO_PLANT_LENTIL = 5_000;
     public static float COST_TO_PLANT_COW = 10_000;
     
     // Profit of item
-    public static float PROFIT_FROM_HARVESTING_LENTIL = 100;
-    public static float PROFIT_FROM_HARVESTING_COW = 1_000;
-    public static float PROFIT_FROM_KILLING_ROBOT = 10_000;
+    public static float PROFIT_FROM_HARVESTING_LENTIL = 1_000;
+    public static float PROFIT_FROM_HARVESTING_COW = 5_000;
     
     // Efficiency Increases
     public static float LED_LIGHT_EFFICIENCY_INCREASE = 0.3f;
@@ -23,10 +23,10 @@ public static class Constants
     public static float TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER = 1.2f;
     
     // Money
-    public static int PLAYER_START_MONEY = 1_000_000;
-    public static int ENEMY_START_MONEY = 200_000;
+    public static int PLAYER_START_MONEY = 100_000;
+    public static int ENEMY_START_MONEY = 1_000_000;
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5f;
-    public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = .1f;
+    public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = .25f;
     public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0.5f;
     
     // Messages
