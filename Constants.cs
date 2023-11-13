@@ -3,13 +3,13 @@
 public static class Constants
 {
     // Energy Costs
-    public static float LIGHT_ENERGY_COST_PER_MINUTE = 1_000;
-    public static float HVAC_SYSTEM_COST_PER_MINUTE = 2_000;
+    public static float LIGHT_ENERGY_COST_PER_MINUTE = 500;
+    public static float HVAC_SYSTEM_COST_PER_MINUTE = 500;
     public static float TIME_UNTIL_PLAYER_LOSES_MONEY = 5f;
-    public static float DIVIDE_FACTOR = 200;  // Divide factor to present money costs to user (1_000 too large, but 1 is reasonable)
+    public static float DIVIDE_FACTOR = 50;  // Divide factor to present money costs to user (1_000 too large, but 1 is reasonable)
     
     // Cost Per Item
-    public static float COST_TO_PLANT_LENTIL = 5_000;
+    public static float COST_TO_PLANT_LENTIL = 2_000;
     public static float COST_TO_PLANT_COW = 10_000;
     
     // Profit of item
@@ -24,19 +24,42 @@ public static class Constants
     
     // Money
     public static int PLAYER_START_MONEY = 100_000;
-    public static int ENEMY_START_MONEY = 1_000_000;
+    public static int ENEMY_START_MONEY = 500_000;
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5f;
     public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = .25f;
-    public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0.5f;
+    public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0.05f;
+    public static float GEOTHERMAL_ENERGY_COST = 200_000;
+    private static int GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER = (int)(GEOTHERMAL_ENERGY_COST / DIVIDE_FACTOR);
+    
+    // Times
+    public static float ENEMY_SHOOT_TIME = 5f;
+    public static float ENEMY_SHOOT_TIME_AFTER_PLAYER_HIT = 5f;
+    public static float ENEMY_SHOOT_TIME_DELAY_AFTER_SPAWN = 5f;
+    public static float TIME_BEFORE_BULLET_DESPAWNS = 5f;
+    
+    // Speeds
+    public static float ENEMY_SPEED = 8f;
+    public static float PLAYER_SPEED = 10f;
+    public static float BULLET_SPEED = 20f;
+    
+    // Jumping
+    public static float X_SENSITIVITY = 120f;
+    public static float Y_SENSITIVITY = 120f;
+    
+    // -Movement
+    public static float JUMP_HEIGHT = 3f;
+    public static float TIME_TO_VERTEX = .6f;
+    public static int MAX_JUMPS = 2;
+    
+    // Other
+    public static float ENEMY_FOLLOW_DISTANCE = 4f;
+    
     
     // Messages
     public static string GEOTHERMAL_NEWSPAPER_TEXT =
-"You can install Geothermal Power for $3, 000 Geothermal Power will increase your house's energy efficiency by 95% " +
-@"and it is better for the enviornment!
-
-Press 'X' to install Geothermal Power
-Press 'Y' to deny";
-
+"You can install Geothermal Power for " + GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER + " Geothermal Power will increase your house's energy efficiency by 95% " +
+@"and it is better for the enviornment!";
+    
     public static string ENERGY_PROVIDER_NEWSPAPER_TEXT =
 @"You have two options for your energy provider:
 
@@ -76,7 +99,7 @@ Press 'X' to start a new game";
 
     public static string ALL_MONEY_TEXT =
 "You Won? You drove that cow farmer out of business, but at what cost. You contributed the destruction of the environment and " +
-@"the environment may never recover. Sure you had good intentions at first, but that is no excuse for your actions
+@"the environment may never recover. Stealing cows and not choosing good energy choices will affect generations to come.
 
 Press 'X' to start a new game and maybe this time think about your actions";
 

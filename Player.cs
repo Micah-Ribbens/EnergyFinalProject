@@ -23,18 +23,20 @@ public class Player : PlaceableObject
     
     // Editable Variables
     // -Camera
-    private float xSensitivity = 120f;
-    private float ySensitivity = 120f;
+    private float xSensitivity = Constants.X_SENSITIVITY;
+    private float ySensitivity = Constants.Y_SENSITIVITY;
     
     // -Movement
-    private float jumpHeight = 4f;
-    private float timeToVertex = .6f;
-    private int maxJumps = 2;
+    private float jumpHeight = Constants.JUMP_HEIGHT;
+    private float timeToVertex = Constants.TIME_TO_VERTEX;
+    private int maxJumps = Constants.MAX_JUMPS;
     private int jumpsLeft;
-    private float playerSpeed = 10f;
+    private float playerSpeed = Constants.PLAYER_SPEED;
 
     private bool hasInstantiated = false;
     private bool isActive = true;
+
+    private Action onHitEnemyAction;
 
     // Update is called once per frame
     void Update()
@@ -98,8 +100,6 @@ public class Player : PlaceableObject
         playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0, 0);
 
         transform.Rotate(Vector3.up * (lookVector.x * Time.deltaTime) * xSensitivity);
-        
-
     }
 
     private void Jump()
@@ -148,5 +148,18 @@ public class Player : PlaceableObject
         {
             transform.position = position;
         }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Enemy") && onHitEnemyAction != null)
+        {
+            onHitEnemyAction();
+        }
+    }
+
+    public void SetOnHitEnemyAction(Action action)
+    {
+        onHitEnemyAction = action;
     }
 }

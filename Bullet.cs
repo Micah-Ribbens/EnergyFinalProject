@@ -4,9 +4,9 @@ using UnityEngine;
 public class Bullet : MonoBehaviour
 {
     private float timeToDelete = 0;
-    private float timeBeforeDelete = 5f;
+    private float timeBeforeDelete = Constants.TIME_BEFORE_BULLET_DESPAWNS;
     private Vector3 movementVector;
-    private float speed = 20f;
+    private float speed = Constants.BULLET_SPEED;
     private Action onTriggerEnterAction;
     
     private void Start()

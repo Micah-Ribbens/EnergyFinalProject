@@ -72,8 +72,8 @@ public class MainScript : MonoBehaviour
     private int greenOptionsNeeded = 3;
     
     // Modifiable Values
-    private float timeBeforeShooting = 3f;
-    private float delayAfterSpawningForEnemyShooting = 5f;
+    private float timeBeforeShooting = Constants.ENEMY_SHOOT_TIME;
+    private float delayAfterSpawningForEnemyShooting = Constants.ENEMY_SHOOT_TIME_DELAY_AFTER_SPAWN;
     private float timeLeftUntilPlayerLosesMoney = Constants.TIME_UNTIL_PLAYER_LOSES_MONEY;
     
     // Calculated Constant Factors Off By
@@ -99,11 +99,9 @@ public class MainScript : MonoBehaviour
     private bool canCallRestartGame = true;
     
     // HUD Variables
-    public Image piggyBankGreenFill;
     public Image piggyBankRedFill;
     public Canvas piggyBankCanvas;
 
-    public Image moneyProportionGreenFill;
     public Image moneyProportionRedFill;
     public GameObject moneyProportionCanvas;
 
@@ -111,11 +109,10 @@ public class MainScript : MonoBehaviour
     public Canvas enemyShootingUICanvas;
 
     private Image[] hudImages;
-    private float[] offsets = { 130 - 47,  130 - 47, 130 - 30};
     private float totalEnemyShootTime = 0;
     private float energyUtilsCost = 0;
 
-    private float enemySpeed = 8f;
+    private float enemySpeed = Constants.ENEMY_SPEED;
 
 
     private void Start()
@@ -171,7 +168,7 @@ public class MainScript : MonoBehaviour
             {
                 float proportion = Constants.TIME_UNTIL_PLAYER_LOSES_MONEY / 60f;  // Proportion of a minute
                 float hvacCost = Constants.HVAC_SYSTEM_COST_PER_MINUTE * proportion * houseEnergyEfficiency;
-                float lightsCost = Constants.LIGHT_ENERGY_COST_PER_MINUTE * proportion * numberOfPlantsLeft;
+                float lightsCost = Constants.LIGHT_ENERGY_COST_PER_MINUTE * proportion * numberOfPlantsLeft * lightsEnergyEfficiency;
                 float totalCost = (hvacCost + lightsCost) * energyCostMultiplier;
                 
                 playerMoney -= totalCost;
@@ -232,7 +229,7 @@ public class MainScript : MonoBehaviour
         Vector3 enemyPosition = enemy.transform.position;
         Vector3 movementVector = new Vector3(playerPosition.x - enemyPosition.x, 0, playerPosition.z - enemyPosition.z);
 
-        if (movementVector.magnitude > 2)  // If the enemy is close to the playerObject - do not move to the playerObject
+        if (movementVector.magnitude > Constants.ENEMY_FOLLOW_DISTANCE)  // If the enemy is close to the playerObject - do not move to the playerObject
         {
             movementVector.Normalize();
             
@@ -281,6 +278,10 @@ public class MainScript : MonoBehaviour
         enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + enemyHouseYOffBy, enemyHouse.GetZBeginningEdge());
         playerHouse.Place(playerHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + playerHouseYOffBy, playerHouse.GetZBeginningEdge());
         bed.Place(bed.GetXBeginningEdge(), land.GetYBeginningEdge() + bedYOffBy, bed.GetZBeginningEdge());
+        player.SetOnHitEnemyAction(() =>
+        {
+            SetEnemyShootTime(Constants.ENEMY_SHOOT_TIME_AFTER_PLAYER_HIT);
+        });
     }
 
 
@@ -411,25 +412,46 @@ public class MainScript : MonoBehaviour
     private void DiscoverGeothermal()
     {
         SetLargeTextCanvasActive(true);
-        largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT;
         SetPopupActive(false);
 
+        if (playerMoney >= Constants.GEOTHERMAL_ENERGY_COST)
+        {
+            largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT + "/n/nYou have " + GetConverted(playerMoney) + " so you can afford it!" +
+                             "/nPress 'X' to install Geothermal" + "\nPress 'Y' to Deny";
+            SetButtonActionsForEnoughMoney();
+        }
+
+        else
+        {
+            largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT + "\n\nYou have " + GetConverted(playerMoney) +
+                             " so you sadly cannot afford it. Come back when you can." + "\n\nPress 'X' to continue";
+            SetOnButtonAction1(() =>
+            {
+                SetLargeTextCanvasActive(false);
+                SetPopupActive(popupIsActive);
+                TriggerExitAction(geothermalNewspaperObject);
+            });
+        }
+    }
+
+    private void SetButtonActionsForEnoughMoney()
+    {
         SetOnButtonAction1(() =>
         {
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
-            DisableInteractableObject(geothermalNewspaperObject);
+            DisableInteractableObject(geothermalNewspaper);
             houseEnergyEfficiency -= Constants.GEOTHERMAL_EFFICIENCY_INCREASE;
+            playerMoney -= Constants.GEOTHERMAL_ENERGY_COST;
             greenOptionsChosen++;
         });
         
         SetOnButtonAction2(() =>
         {
-            DisableInteractableObject(geothermalNewspaperObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
         });
-
+        
     }
     
     private void DiscoverEnergyProvider()
@@ -440,18 +462,18 @@ public class MainScript : MonoBehaviour
 
         SetOnButtonAction1(() =>
         {
-            DisableInteractableObject(energyProviderNewspaperObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
+            DisableInteractableObject(energyProviderNewspaper);
             greenOptionsChosen++;
             energyCostMultiplier = Constants.TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER;
         });
         
         SetOnButtonAction2(() =>
         {
-            DisableInteractableObject(energyProviderNewspaperObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
+            DisableInteractableObject(energyProviderNewspaper);
             energyCostMultiplier = Constants.LIGHTNING_ENERGY_PROVIDER_COST_MULTIPLIER;
         });
 
@@ -466,9 +488,9 @@ public class MainScript : MonoBehaviour
         SetOnButtonAction1(() =>
         {
             greenOptionsChosen++;
-            DisableInteractableObject(securityCameraObject);
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
+            DisableInteractableObject(securityCamera);
             lightsEnergyEfficiency -= Constants.LED_LIGHT_EFFICIENCY_INCREASE;
 
         });
@@ -494,8 +516,8 @@ public class MainScript : MonoBehaviour
     
     private void TriggerEnterAction(GameObject gameObject)
     {
-        if (largeTextIsActive) return;
-        
+        if (largeTextIsActive || gameObject == null) return;
+
         foreach (var key in tagOptions.Keys)
         {
             if (gameObject.CompareTag(key))
@@ -581,7 +603,7 @@ public class MainScript : MonoBehaviour
         energyProviderNewspaperObject.SetActive(true);
         securityCameraObject.SetActive(true);
             
-        DisableInteractableObject(greenNewspaperObject);
+        DisableInteractableObject(greenNewspaper);
         greenNewspaper.SetActions(null, null);
         enemyHouse.SetActions(null, null);
             
@@ -613,7 +635,7 @@ public class MainScript : MonoBehaviour
         if (dayNumber == 1) return Constants.DAY_1_TEXT;
 
         return "Day Number " + dayNumber + ". I have still not succeeded in stopping that cow farmer." +
-               " I must continue trying. Day End Numbers:" + GetDayEndNumbers(false);
+               " I must continue trying. Day End Numbers:" + GetDayEndNumbersText(false);
 
     }
 
@@ -637,7 +659,7 @@ public class MainScript : MonoBehaviour
         if (!largeTextIsActive)
         {
             SetLargeTextCanvasActive(true);
-            largeText.text = Constants.GOT_SHOT_TEXT + GetDayEndNumbers(true);
+            largeText.text = Constants.GOT_SHOT_TEXT + GetDayEndNumbersText(true);
             
             numberOfCowsLeft = cows.Length;
             numberOfPlantsLeft = plants.Length;
@@ -665,7 +687,7 @@ public class MainScript : MonoBehaviour
 
     private void TakeGreenNewspaper()
     {
-        DisableInteractableObject(greenNewspaperObject);
+        DisableInteractableObject(greenNewspaper);
         hasCollectedGreenNewspaper = true;
         SetPopupActive(false);
         largeText.text = Constants.GREEN_NEWSPAPER_TEXT;
@@ -688,10 +710,11 @@ public class MainScript : MonoBehaviour
         TriggerExitAction(enemyHouseObject);
     }
 
-    private void DisableInteractableObject(GameObject gameObject)
+    private void DisableInteractableObject(InteractableObject interactableObject)
     {
-        gameObject.SetActive(false);
-        TriggerExitAction(gameObject);
+        interactableObject.SetActions(null, null);
+        interactableObject.gameObject.SetActive(false);
+        TriggerExitAction(interactableObject.gameObject);
     }
 
     private void SetHUDActive(bool isActive)
@@ -744,7 +767,7 @@ public class MainScript : MonoBehaviour
         totalEnemyShootTime = time;
     }
 
-    private string GetDayEndNumbers(bool hasBeenShot)
+    private string GetDayEndNumbersText(bool hasBeenShot)
     {
         float cost = plants.Length * Constants.COST_TO_PLANT_LENTIL + energyUtilsCost;
         float profit = moneyInBank - cost;
@@ -754,11 +777,20 @@ public class MainScript : MonoBehaviour
         int convertedUtilsCost = (int) (energyUtilsCost / Constants.DIVIDE_FACTOR);
         int convertedProfit = (int) (profit / Constants.DIVIDE_FACTOR);
         int convertedMoneyInBank = (int)(moneyInBank / Constants.DIVIDE_FACTOR);
-        
-            
-        return "\n\nMoney In Piggy Bank: $" + convertedMoneyInBank + "\nLentils Harvested: " + (plants.Length - numberOfPlantsLeft) +
-               "\nCows Stolen: " + (cows.Length - numberOfCowsLeft) + "\nEnergy Utils Cost: $" + convertedUtilsCost + 
-               "\nTotal Profit: $" + convertedProfit + "\n\nPress 'X' to continue";
+        int convertedPlayerMoney = (int)(playerMoney / Constants.DIVIDE_FACTOR);
+        int convertedEnemyMoney = (int)(enemyMoney / Constants.DIVIDE_FACTOR);
+
+
+        return "\n\nMoney In Piggy Bank: $" + convertedMoneyInBank + "\nLentils Harvested: " +
+               (plants.Length - numberOfPlantsLeft) +
+               "\nCows Stolen: " + (cows.Length - numberOfCowsLeft) + "\nEnergy Utils Cost: $" + convertedUtilsCost +
+               "\nTotal Profit: $" + convertedProfit + "\nPlayer Money: " + convertedPlayerMoney +
+               "\nEnemy Money: " + convertedEnemyMoney + "\n\nPress 'X' to continue";
     }
-    
+
+    private int GetConverted(float amount)
+    {
+        return (int)(amount / Constants.DIVIDE_FACTOR);
+    }
+
 }
