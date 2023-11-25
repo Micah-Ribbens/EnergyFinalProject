@@ -9,12 +9,12 @@ public static class Constants
     public static float DIVIDE_FACTOR = 50;  // Divide factor to present money costs to user (1_000 too large, but 1 is reasonable)
     
     // Cost Per Item
-    public static float COST_TO_PLANT_LENTIL = 2_000;
-    public static float COST_TO_PLANT_COW = 10_000;
+    public static float COST_TO_PLANT_LENTIL = 20_000;
+    public static float COST_TO_PLANT_COW = 100_000;
     
     // Profit of item
-    public static float PROFIT_FROM_HARVESTING_LENTIL = 1_000;
-    public static float PROFIT_FROM_HARVESTING_COW = 5_000;
+    public static float PROFIT_FROM_HARVESTING_LENTIL = 10_000;
+    public static float PROFIT_FROM_HARVESTING_COW = 50_000;
     
     // Efficiency Increases
     public static float LED_LIGHT_EFFICIENCY_INCREASE = 0.3f;
@@ -26,14 +26,14 @@ public static class Constants
     public static int PLAYER_START_MONEY = 100_000;
     public static int ENEMY_START_MONEY = 500_000;
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5f;
-    public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = .25f;
+    public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = .7f;
     public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0.05f;
     public static float GEOTHERMAL_ENERGY_COST = 200_000;
     private static int GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER = (int)(GEOTHERMAL_ENERGY_COST / DIVIDE_FACTOR);
     
     // Times
     public static float ENEMY_SHOOT_TIME = 5f;
-    public static float ENEMY_SHOOT_TIME_AFTER_PLAYER_HIT = 5f;
+    public static float ENEMY_SHOOT_TIME_AFTER_PLAYER_HIT = 2f;
     public static float ENEMY_SHOOT_TIME_DELAY_AFTER_SPAWN = 5f;
     public static float TIME_BEFORE_BULLET_DESPAWNS = 5f;
     

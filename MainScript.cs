@@ -7,7 +7,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-// TODO fix button mapping glitch!
 public class MainScript : MonoBehaviour
 {
     // Placeable Objects
@@ -281,6 +280,8 @@ public class MainScript : MonoBehaviour
         player.SetOnHitEnemyAction(() =>
         {
             SetEnemyShootTime(Constants.ENEMY_SHOOT_TIME_AFTER_PLAYER_HIT);
+            // timeWhenEnemyShoots += Constants.ENEMY_SHOOT_TIME_AFTER_PLAYER_HIT;
+            // totalEnemyShootTime += Constants.ENEMY_SHOOT_TIME_AFTER_PLAYER_HIT;
         });
     }
 
@@ -773,13 +774,12 @@ public class MainScript : MonoBehaviour
         float profit = moneyInBank - cost;
 
         if (hasBeenShot) profit = -cost;
-
-        int convertedUtilsCost = (int) (energyUtilsCost / Constants.DIVIDE_FACTOR);
-        int convertedProfit = (int) (profit / Constants.DIVIDE_FACTOR);
-        int convertedMoneyInBank = (int)(moneyInBank / Constants.DIVIDE_FACTOR);
-        int convertedPlayerMoney = (int)(playerMoney / Constants.DIVIDE_FACTOR);
-        int convertedEnemyMoney = (int)(enemyMoney / Constants.DIVIDE_FACTOR);
-
+        
+        int convertedUtilsCost = GetConverted(energyUtilsCost);
+        int convertedProfit = GetConverted(profit);
+        int convertedMoneyInBank = GetConverted(moneyInBank);
+        int convertedPlayerMoney = GetConverted(playerMoney);
+        int convertedEnemyMoney = GetConverted(enemyMoney);
 
         return "\n\nMoney In Piggy Bank: $" + convertedMoneyInBank + "\nLentils Harvested: " +
                (plants.Length - numberOfPlantsLeft) +
@@ -793,4 +793,5 @@ public class MainScript : MonoBehaviour
         return (int)(amount / Constants.DIVIDE_FACTOR);
     }
 
+    // TODO make the prisoner's dilemna more clear throughout the game
 }
