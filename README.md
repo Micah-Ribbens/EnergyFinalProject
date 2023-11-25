@@ -1,7 +1,5 @@
 ﻿Finished Development: 11/15/2023
 
-First four years of programming
-
 # Summary
 This was a game that I made for my energy class. It explores the dynamics of the prisoner's dilemna and how that relates
 to Energy. The game has two players: the main player and an enemy. The enemy is harming the environment by having many
