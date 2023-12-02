@@ -2,7 +2,7 @@
 
 public static class Constants
 {
-    public static bool IS_PRESENTING = false;
+    public static bool IS_PRESENTING = true;
     // Energy Costs
     public static float LIGHT_ENERGY_COST_PER_MINUTE = 500;
     public static float HVAC_SYSTEM_COST_PER_MINUTE = 500;
@@ -10,11 +10,11 @@ public static class Constants
     public static float DIVIDE_FACTOR = 50;  // Divide factor to present money costs to user (1_000 too large, but 1 is reasonable)
     
     // Cost Per Item
-    public static float COST_TO_PLANT_LENTIL = 20_000;
+    public static float COST_TO_PLANT_LENTIL = IS_PRESENTING ? 100_000 : 20_000;
     public static float COST_TO_PLANT_COW = 50_000;
     
     // Profit of item
-    public static float PROFIT_FROM_HARVESTING_LENTIL = 10_000;
+    public static float PROFIT_FROM_HARVESTING_LENTIL = IS_PRESENTING ? 50_000 : 10_000;
     public static float PROFIT_FROM_HARVESTING_COW = 50_000;
     
     // Efficiency Increases
@@ -29,7 +29,7 @@ public static class Constants
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5f;
     public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = IS_PRESENTING ? .6f : .3f;
     public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0f;
-    public static float GEOTHERMAL_ENERGY_COST = 200_000;
+    public static float GEOTHERMAL_ENERGY_COST = IS_PRESENTING ? 150_000 : 200_000;
     private static int GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER = (int)(GEOTHERMAL_ENERGY_COST / DIVIDE_FACTOR);
     
     // Times

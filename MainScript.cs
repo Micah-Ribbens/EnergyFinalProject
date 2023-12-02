@@ -271,7 +271,7 @@ public class MainScript : MonoBehaviour
         bullet2Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet2));
     }
 
-    private void Initialize()
+    private void SetObjectActions()
     {
         InteractableObject[] objects = { bed, securityCamera, energyProviderNewspaper, geothermalNewspaper};
         foreach (var obj in objects)
@@ -279,6 +279,11 @@ public class MainScript : MonoBehaviour
             obj.SetActions(() => TriggerEnterAction(obj.gameObject), () => TriggerExitAction(obj.gameObject));
             
         }
+    }
+
+    private void Initialize()
+    {
+        SetObjectActions();
         
         enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + enemyHouseYOffBy, enemyHouse.GetZBeginningEdge());
         playerHouse.Place(playerHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + playerHouseYOffBy, playerHouse.GetZBeginningEdge());
@@ -633,9 +638,11 @@ public class MainScript : MonoBehaviour
         securityCameraObject.SetActive(true);
             
         DisableInteractableObject(greenNewspaper);
+        SetObjectActions();
         greenNewspaper.SetActions(null, null);
         enemyHouse.SetActions(null, null);
             
+        player.transform.position = playerStartPosition;
         BeginNewDay(false, true);
     }
 
@@ -764,8 +771,6 @@ public class MainScript : MonoBehaviour
         float piggyBankProportion = moneyInBank / (plantsTotalMoney + cowTotalMoney);
 
         float[] values = {1 - GetPlayerMoneyProportion(), 1 - piggyBankProportion, -enemyShootTimeProportion};
-        // float[] values = { .5f, .5f, -0.5f };
-        
         SetHUDFills(values);
     }
 
@@ -819,6 +824,4 @@ public class MainScript : MonoBehaviour
     {
         return (int)(amount / Constants.DIVIDE_FACTOR);
     }
-
-    // TODO make the prisoner's dilemna more clear throughout the game
 }
