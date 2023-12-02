@@ -2,6 +2,7 @@
 
 public static class Constants
 {
+    public static bool IS_PRESENTING = false;
     // Energy Costs
     public static float LIGHT_ENERGY_COST_PER_MINUTE = 500;
     public static float HVAC_SYSTEM_COST_PER_MINUTE = 500;
@@ -10,7 +11,7 @@ public static class Constants
     
     // Cost Per Item
     public static float COST_TO_PLANT_LENTIL = 20_000;
-    public static float COST_TO_PLANT_COW = 100_000;
+    public static float COST_TO_PLANT_COW = 50_000;
     
     // Profit of item
     public static float PROFIT_FROM_HARVESTING_LENTIL = 10_000;
@@ -23,11 +24,11 @@ public static class Constants
     public static float TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER = 1.2f;
     
     // Money
-    public static int PLAYER_START_MONEY = 100_000;
+    public static int PLAYER_START_MONEY = IS_PRESENTING ? 300_000 : 50_000;
     public static int ENEMY_START_MONEY = 500_000;
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5f;
-    public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = .7f;
-    public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0.05f;
+    public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = IS_PRESENTING ? .6f : .3f;
+    public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0f;
     public static float GEOTHERMAL_ENERGY_COST = 200_000;
     private static int GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER = (int)(GEOTHERMAL_ENERGY_COST / DIVIDE_FACTOR);
     
@@ -57,7 +58,7 @@ public static class Constants
     
     // Messages
     public static string GEOTHERMAL_NEWSPAPER_TEXT =
-"You can install Geothermal Power for " + GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER + " Geothermal Power will increase your house's energy efficiency by 95% " +
+"You can install Geothermal Power for $" + GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER + " Geothermal Power will increase your house's energy efficiency by 95% " +
 @"and it is better for the enviornment!";
     
     public static string ENERGY_PROVIDER_NEWSPAPER_TEXT =
@@ -88,6 +89,19 @@ Press 'X' to start a new game";
 
 Press 'X' to continue";
 
+    public static string DAY_2_TEXT =
+"Day 2 of your adventure. I seem to earn money for each cow I steal and for each lentil I harvest. But that money goes into my piggy bank (or inventory) and I don't seem to get it until after the day ends. My neighbor also seems " +
+"to earn money from any lentils and cows I didn't take that day. Anyways, I should probably not get shot by the robot because I heard rumors it put you to sleep. So " +
+@"I think the neighbor will take that opportunity to steal my inventory and the remaining lentils + cows.
+
+Press 'X' to continue";
+
+    public static string DAY_3_TEXT =
+"I wonder what all the technology around the landscape does. I should probably approach it. After all, those newspapers " +
+@"on the door posts and that weird looking security camera could help me some how.
+
+Press 'X' to continue";
+
     public static string GOT_SHOT_TEXT =
 @"That stupid cow farmer's robot shot you. He stole all your inventory and your plants. This is unbelievable! You lost: ";
 
@@ -99,7 +113,7 @@ Press 'X' to start a new game";
 
     public static string ALL_MONEY_TEXT =
 "You Won? You drove that cow farmer out of business, but at what cost. You contributed the destruction of the environment and " +
-@"the environment may never recover. Stealing cows and not choosing good energy choices will affect generations to come.
+@"the environment may never recover. Profiting from cows at the expense of the environment and not choosing good energy choices will affect generations to come.
 
 Press 'X' to start a new game and maybe this time think about your actions";
 
@@ -114,8 +128,5 @@ Press 'X' to start a new game and maybe this time think about your actions";
 .
 
 Press 'X' to continue";
-
-
-
-
+    
 }

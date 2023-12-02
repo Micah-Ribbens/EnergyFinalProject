@@ -112,8 +112,8 @@ public class MainScript : MonoBehaviour
     private float energyUtilsCost = 0;
 
     private float enemySpeed = Constants.ENEMY_SPEED;
-
-
+    private bool isPresenting = Constants.IS_PRESENTING;
+    
     private void Start()
     {
         // Grabbing variables from Unity Hub
@@ -145,8 +145,6 @@ public class MainScript : MonoBehaviour
         tagOptions.Add("GreenNewspaper", "Press 'B' To Collect Tree Hugger Newsletter");
         tagOptions.Add("EnemyHouse", "Press 'B' To Place Tree Hugger Newsletter");
         hudImages = new Image[] { moneyProportionRedFill, piggyBankRedFill, enemyShootingUIFill };
-
-
     }
     
     private void Update()
@@ -242,27 +240,35 @@ public class MainScript : MonoBehaviour
 
         if (timeWhenEnemyShoots <= Time.time)
         {
-            movementVector.Normalize();
-
-            Vector3 bulletRotation = enemy.transform.eulerAngles + bulletPrefab.transform.eulerAngles;
-            GameObject bullet1 = Instantiate(bulletPrefab, enemyCannonLeft.transform.position, Quaternion.Euler(bulletRotation));
-            GameObject bullet2 = Instantiate(bulletPrefab, enemyCannonRight.transform.position, Quaternion.Euler(bulletRotation));
-
-            bullet1.transform.parent = container.transform;
-            bullet2.transform.parent = container.transform;
-
-            Bullet bullet1Script = bullet1.GetComponent<Bullet>();
-            Bullet bullet2Script = bullet2.GetComponent<Bullet>();
-            
-            bullet1Script.SetMovementVector(movementVector);
-            bullet2Script.SetMovementVector(movementVector);
-            
-            bullet1Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet1));
-            bullet2Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet2));
-            
             SetEnemyShootTime(timeBeforeShooting);
+
+            if (!isPresenting)
+            {
+                ShootBullets(movementVector);
+            }
         }
         
+    }
+
+    private void ShootBullets(Vector3 movementVector)
+    {
+        movementVector.Normalize();
+
+        Vector3 bulletRotation = enemy.transform.eulerAngles + bulletPrefab.transform.eulerAngles;
+        GameObject bullet1 = Instantiate(bulletPrefab, enemyCannonLeft.transform.position, Quaternion.Euler(bulletRotation));
+        GameObject bullet2 = Instantiate(bulletPrefab, enemyCannonRight.transform.position, Quaternion.Euler(bulletRotation));
+
+        bullet1.transform.parent = container.transform;
+        bullet2.transform.parent = container.transform;
+
+        Bullet bullet1Script = bullet1.GetComponent<Bullet>();
+        Bullet bullet2Script = bullet2.GetComponent<Bullet>();
+            
+        bullet1Script.SetMovementVector(movementVector);
+        bullet2Script.SetMovementVector(movementVector);
+            
+        bullet1Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet1));
+        bullet2Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet2));
     }
 
     private void Initialize()
@@ -322,19 +328,21 @@ public class MainScript : MonoBehaviour
 
     private void BeginNewDay(bool calculateMoney, bool shouldGiveText)
     {
-        // This must be here, so resetting the variables does not mess up the calculations
-        string dayStartText = GetDayStartText();
-        energyUtilsCost = 0;
-        
+        // I should increase the player's money here, but not reset the piggyBank until later
         if (calculateMoney)
         {
             enemyMoney += (Constants.PROFIT_FROM_HARVESTING_COW + Constants.COST_TO_PLANT_COW) * numberOfCowsLeft;
             enemyMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL * numberOfPlantsLeft;
             playerMoney += moneyInBank;
-            moneyInBank = 0;
         }
         
+        // This must be here, so resetting the variables does not mess up the calculations
         UpdateGridsForNewDay();
+        
+        string dayStartText = GetDayStartText();
+        energyUtilsCost = 0;
+        moneyInBank = 0;
+        
 
         if (GetPlayerMoneyProportion() >= Constants.MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER 
             && greenOptionsChosen == greenOptionsNeeded)
@@ -354,9 +362,29 @@ public class MainScript : MonoBehaviour
         {
             if (shouldGiveText)
             {
-                SetLargeTextCanvasActive(true);
-                largeText.text = dayStartText;
-                SetOnButtonAction1(NewDayButtonAction);
+                // If the day number is 2 or 3 then the player should still see their profits!
+                if (dayNumber <= 3 && dayNumber != 1) {
+                    string text = "";
+                    if (dayNumber == 2) text = Constants.DAY_2_TEXT;
+                    if (dayNumber == 3) text = Constants.DAY_3_TEXT;
+                    SetLargeTextCanvasActive(true);
+                    largeText.text = text;
+                    
+                    SetOnButtonAction1(() =>
+                    {
+                        SetLargeTextCanvasActive(true);
+                        largeText.text = dayStartText;
+                        SetOnButtonAction1(NewDayButtonAction);
+                    });
+                }
+                else
+                {
+                    SetLargeTextCanvasActive(true);
+                    largeText.text = dayStartText;
+                    SetOnButtonAction1(NewDayButtonAction);
+                }
+
+
             } else
             {
                 NewDayButtonAction();
@@ -417,14 +445,14 @@ public class MainScript : MonoBehaviour
 
         if (playerMoney >= Constants.GEOTHERMAL_ENERGY_COST)
         {
-            largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT + "/n/nYou have " + GetConverted(playerMoney) + " so you can afford it!" +
-                             "/nPress 'X' to install Geothermal" + "\nPress 'Y' to Deny";
+            largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT + "\n\nYou have $" + GetConverted(playerMoney) + " so you can afford it!" +
+                             "\nPress 'X' to install Geothermal" + "\nPress 'Y' to Deny";
             SetButtonActionsForEnoughMoney();
         }
 
         else
         {
-            largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT + "\n\nYou have " + GetConverted(playerMoney) +
+            largeText.text = Constants.GEOTHERMAL_NEWSPAPER_TEXT + "\n\nYou have $" + GetConverted(playerMoney) +
                              " so you sadly cannot afford it. Come back when you can." + "\n\nPress 'X' to continue";
             SetOnButtonAction1(() =>
             {
@@ -634,7 +662,6 @@ public class MainScript : MonoBehaviour
     private string GetDayStartText()
     {
         if (dayNumber == 1) return Constants.DAY_1_TEXT;
-
         return "Day Number " + dayNumber + ". I have still not succeeded in stopping that cow farmer." +
                " I must continue trying. Day End Numbers:" + GetDayEndNumbersText(false);
 
@@ -784,8 +811,8 @@ public class MainScript : MonoBehaviour
         return "\n\nMoney In Piggy Bank: $" + convertedMoneyInBank + "\nLentils Harvested: " +
                (plants.Length - numberOfPlantsLeft) +
                "\nCows Stolen: " + (cows.Length - numberOfCowsLeft) + "\nEnergy Utils Cost: $" + convertedUtilsCost +
-               "\nTotal Profit: $" + convertedProfit + "\nPlayer Money: " + convertedPlayerMoney +
-               "\nEnemy Money: " + convertedEnemyMoney + "\n\nPress 'X' to continue";
+               "\nTotal Profit: $" + convertedProfit + "\nPlayer Money: $" + convertedPlayerMoney +
+               "\nEnemy Money: $" + convertedEnemyMoney + "\n\nPress 'X' to continue";
     }
 
     private int GetConverted(float amount)
