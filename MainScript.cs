@@ -98,14 +98,14 @@ public class MainScript : MonoBehaviour
     private bool canCallRestartGame = true;
     
     // HUD Variables
-    public Image piggyBankRedFill;
-    public Canvas piggyBankCanvas;
+    // public Image piggyBankRedFill;
+    // public Canvas piggyBankCanvas;
 
-    public Image moneyProportionRedFill;
-    public GameObject moneyProportionCanvas;
+    // public Image moneyProportionRedFill;
+    // public GameObject moneyProportionCanvas;
 
-    public Image enemyShootingUIFill;
-    public Canvas enemyShootingUICanvas;
+    // public Image enemyShootingUIFill;
+    // public Canvas enemyShootingUICanvas;
 
     private Image[] hudImages;
     private float totalEnemyShootTime = 0;
@@ -144,7 +144,7 @@ public class MainScript : MonoBehaviour
         tagOptions.Add("Bed", "Press 'X' to Start New Day");
         tagOptions.Add("GreenNewspaper", "Press 'B' To Collect Tree Hugger Newsletter");
         tagOptions.Add("EnemyHouse", "Press 'B' To Place Tree Hugger Newsletter");
-        hudImages = new Image[] { moneyProportionRedFill, piggyBankRedFill, enemyShootingUIFill };
+        // hudImages = new Image[] { moneyProportionRedFill, piggyBankRedFill, enemyShootingUIFill };
     }
     
     private void Update()
@@ -754,14 +754,15 @@ public class MainScript : MonoBehaviour
 
     private void SetHUDActive(bool isActive)
     {
-        piggyBankCanvas.gameObject.SetActive(isActive);
-        enemyShootingUICanvas.gameObject.SetActive(isActive);
-        moneyProportionCanvas.SetActive(isActive);
+        // piggyBankCanvas.gameObject.SetActive(isActive);
+        // enemyShootingUICanvas.gameObject.SetActive(isActive);
+        // moneyProportionCanvas.SetActive(isActive);
     }
     
     // UI Code
     private void RunHUDLogic()
     {
+        return;
         float timeRemaining = Math.Max(timeWhenEnemyShoots - Time.time, 0f);
         float enemyShootTimeProportion = 1 - (timeRemaining / totalEnemyShootTime);
 

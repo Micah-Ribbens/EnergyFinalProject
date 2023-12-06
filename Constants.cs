@@ -2,7 +2,7 @@
 
 public static class Constants
 {
-    public static bool IS_PRESENTING = true;
+    public static bool IS_PRESENTING = false;
     // Energy Costs
     public static float LIGHT_ENERGY_COST_PER_MINUTE = 500;
     public static float HVAC_SYSTEM_COST_PER_MINUTE = 500;
@@ -11,7 +11,7 @@ public static class Constants
     
     // Cost Per Item
     public static float COST_TO_PLANT_LENTIL = IS_PRESENTING ? 100_000 : 20_000;
-    public static float COST_TO_PLANT_COW = 50_000;
+    public static float COST_TO_PLANT_COW = IS_PRESENTING ? 249_999 : 50_000;
     
     // Profit of item
     public static float PROFIT_FROM_HARVESTING_LENTIL = IS_PRESENTING ? 50_000 : 10_000;
@@ -29,7 +29,7 @@ public static class Constants
     public static double PLAYER_PROPORTION_OF_MONEY_SPENT_ON_PLANTS = .5f;
     public static double ENEMY_PROPORTION_OF_MONEY_SPENT_ON_COWS = IS_PRESENTING ? .6f : .3f;
     public static float MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER = 0f;
-    public static float GEOTHERMAL_ENERGY_COST = IS_PRESENTING ? 150_000 : 200_000;
+    public static float GEOTHERMAL_ENERGY_COST = IS_PRESENTING ? 20_000 : 200_000;
     private static int GEOTHERMAL_ENERGY_COST_DISPLAYED_TO_USER = (int)(GEOTHERMAL_ENERGY_COST / DIVIDE_FACTOR);
     
     // Times
@@ -39,7 +39,7 @@ public static class Constants
     public static float TIME_BEFORE_BULLET_DESPAWNS = 5f;
     
     // Speeds
-    public static float ENEMY_SPEED = 8f;
+    public static float ENEMY_SPEED = 0f;
     public static float PLAYER_SPEED = 10f;
     public static float BULLET_SPEED = 20f;
     
@@ -120,7 +120,7 @@ Press 'X' to start a new game and maybe this time think about your actions";
     public static string GREEN_NEWSPAPER_TEXT =
 @"Pass this information to everyone you know! Here are the 100 reasons you should be green:
 
-1. Health Earth = Healthy You
+1. Healthy Earth = Healthy You
 2. You love a good hug from a tree
 3. You care about future generations
 .
