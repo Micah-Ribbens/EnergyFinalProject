@@ -43,7 +43,7 @@ public class MainScript : MonoBehaviour
     public GameObject plantPrefab;
     public GameObject bulletPrefab;
     public GameObject cowPrefab;
-    
+
     // Data Management
     private Dictionary<string, string> tagOptions = new Dictionary<string, string>();
     private InteractableObject[] plants = new InteractableObject[1];
@@ -53,7 +53,7 @@ public class MainScript : MonoBehaviour
     private Action onGrabAction;
     private bool grabButtonWasPressed;
     private bool hasCollectedGreenNewspaper;
-    
+
     // Money
     private int numberOfCowsLeft;
     private int numberOfPlantsLeft;
@@ -69,22 +69,22 @@ public class MainScript : MonoBehaviour
     private Vector3 enemyStartingPosition;
     private int greenOptionsChosen = 0;
     private int greenOptionsNeeded = 3;
-    
+
     // Modifiable Values
     private float timeBeforeShooting = Constants.ENEMY_SHOOT_TIME;
     private float delayAfterSpawningForEnemyShooting = Constants.ENEMY_SHOOT_TIME_DELAY_AFTER_SPAWN;
     private float timeLeftUntilPlayerLosesMoney = Constants.TIME_UNTIL_PLAYER_LOSES_MONEY;
-    
+
     // Calculated Constant Factors Off By
     private float playerHouseYOffBy = 1.1f;
     private float enemyHouseYOffBy = -0.975f;
     private float plantYOffBy = -.1f;
     private float cowYOffBy = 0.05f;
     private float bedYOffBy = -.316f;
-    
+
     // Grid Logic
     private int framesBeforeCallingGridMethod = 2;  // Whether the grid objects have beeen created and grid.turnIntoGrid() was never called
-    
+
     // Energy Efficiencies
     private float houseEnergyEfficiency = 1;
     private float lightsEnergyEfficiency = 1;
@@ -96,24 +96,23 @@ public class MainScript : MonoBehaviour
     private bool buttonAWasPressed = false;
     private bool buttonBWasPressed = false;
     private bool canCallRestartGame = true;
-    
+
     // HUD Variables
-    // public Image piggyBankRedFill;
-    // public Canvas piggyBankCanvas;
+    public Image piggyBankRedFill;
+    public Canvas piggyBankCanvas;
 
-    // public Image moneyProportionRedFill;
-    // public GameObject moneyProportionCanvas;
+    public Image moneyProportionRedFill;
+    public GameObject moneyProportionCanvas;
 
-    // public Image enemyShootingUIFill;
-    // public Canvas enemyShootingUICanvas;
+    public Image enemyShootingUIFill;
+    public Canvas enemyShootingUICanvas;
 
     private Image[] hudImages;
     private float totalEnemyShootTime = 0;
     private float energyUtilsCost = 0;
 
     private float enemySpeed = Constants.ENEMY_SPEED;
-    private bool isPresenting = Constants.IS_PRESENTING;
-    
+
     private void Start()
     {
         // Grabbing variables from Unity Hub
@@ -129,28 +128,28 @@ public class MainScript : MonoBehaviour
 
         enemyStartingPosition = enemy.transform.position;
         playerStartPosition = player.transform.position;
-        
+
         SetPopupActive(false);
         SetLargeTextCanvasActive(false);
         BeginNewDay(false, true);
         greenNewspaperObject.SetActive(false);
-        
+
         // Tags
-        tagOptions.Add("Cow", "Press 'B' to Steal Cow");    
-        tagOptions.Add("Plant", "Press 'B' to Harvest Plant");    
+        tagOptions.Add("Cow", "Press 'B' to Steal Cow");
+        tagOptions.Add("Plant", "Press 'B' to Harvest Plant");
         tagOptions.Add("GeothermalNewspaper", "Press 'B' to Discover Technology");
         tagOptions.Add("EnergyProviderNewspaper", "Press 'B' to Discover Technology");
         tagOptions.Add("SecurityCamera", "Press 'B' to Discover Technology");
         tagOptions.Add("Bed", "Press 'X' to Start New Day");
         tagOptions.Add("GreenNewspaper", "Press 'B' To Collect Tree Hugger Newsletter");
         tagOptions.Add("EnemyHouse", "Press 'B' To Place Tree Hugger Newsletter");
-        // hudImages = new Image[] { moneyProportionRedFill, piggyBankRedFill, enemyShootingUIFill };
+        hudImages = new Image[] { moneyProportionRedFill, piggyBankRedFill, enemyShootingUIFill };
     }
-    
+
     private void Update()
     {
         RunEveryFrame();
-        
+
         if (playerMoney <= 0 && canCallRestartGame)
         {
             RestartGame();
@@ -158,7 +157,7 @@ public class MainScript : MonoBehaviour
         } else if (!largeTextIsActive)
         {
             RunEnemyLogic();
-            
+
             timeLeftUntilPlayerLosesMoney -= Time.deltaTime;
 
             if (timeLeftUntilPlayerLosesMoney <= 0)
@@ -167,7 +166,7 @@ public class MainScript : MonoBehaviour
                 float hvacCost = Constants.HVAC_SYSTEM_COST_PER_MINUTE * proportion * houseEnergyEfficiency;
                 float lightsCost = Constants.LIGHT_ENERGY_COST_PER_MINUTE * proportion * numberOfPlantsLeft * lightsEnergyEfficiency;
                 float totalCost = (hvacCost + lightsCost) * energyCostMultiplier;
-                
+
                 playerMoney -= totalCost;
                 timeLeftUntilPlayerLosesMoney = Constants.TIME_UNTIL_PLAYER_LOSES_MONEY;
 
@@ -181,20 +180,18 @@ public class MainScript : MonoBehaviour
     private void RunEveryFrame()
     {
         framesBeforeCallingGridMethod--;
-        
+
         if (!hasCalledInitialization)
         {
             Initialize();
             hasCalledInitialization = true;
         }
-        
+
         if (framesBeforeCallingGridMethod == 0)
         {
             PutIntoGrids();
         }
 
-
-        
         RunButtonLogic();
     }
 
@@ -217,7 +214,7 @@ public class MainScript : MonoBehaviour
             grabButtonWasPressed = false;
             onGrabAction();
         }
-        
+
     }
 
     private void RunEnemyLogic()
@@ -229,10 +226,10 @@ public class MainScript : MonoBehaviour
         if (movementVector.magnitude > Constants.ENEMY_FOLLOW_DISTANCE)  // If the enemy is close to the playerObject - do not move to the playerObject
         {
             movementVector.Normalize();
-            
+
             // Going from a direction that is in world terms to my "local space"
             enemy.transform.Translate(movementVector * Time.deltaTime * enemySpeed, Space.World);
-            
+
             double yRotation = Math.Atan2(movementVector.x, movementVector.z) * 180.0 / Math.PI;
             enemy.transform.eulerAngles = new Vector3(enemy.transform.eulerAngles.x,
                 (float) yRotation + 90f, enemy.transform.eulerAngles.z);
@@ -241,13 +238,9 @@ public class MainScript : MonoBehaviour
         if (timeWhenEnemyShoots <= Time.time)
         {
             SetEnemyShootTime(timeBeforeShooting);
-
-            if (!isPresenting)
-            {
-                ShootBullets(movementVector);
-            }
+            ShootBullets(movementVector);
         }
-        
+
     }
 
     private void ShootBullets(Vector3 movementVector)
@@ -263,10 +256,10 @@ public class MainScript : MonoBehaviour
 
         Bullet bullet1Script = bullet1.GetComponent<Bullet>();
         Bullet bullet2Script = bullet2.GetComponent<Bullet>();
-            
+
         bullet1Script.SetMovementVector(movementVector);
         bullet2Script.SetMovementVector(movementVector);
-            
+
         bullet1Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet1));
         bullet2Script.SetOnTriggerEnterAction(() => RunBulletCollision(bullet2));
     }
@@ -277,14 +270,14 @@ public class MainScript : MonoBehaviour
         foreach (var obj in objects)
         {
             obj.SetActions(() => TriggerEnterAction(obj.gameObject), () => TriggerExitAction(obj.gameObject));
-            
+
         }
     }
 
     private void Initialize()
     {
         SetObjectActions();
-        
+
         enemyHouse.Place(enemyHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + enemyHouseYOffBy, enemyHouse.GetZBeginningEdge());
         playerHouse.Place(playerHouse.GetXBeginningEdge(), land.GetYBeginningEdge() + playerHouseYOffBy, playerHouse.GetZBeginningEdge());
         bed.Place(bed.GetXBeginningEdge(), land.GetYBeginningEdge() + bedYOffBy, bed.GetZBeginningEdge());
@@ -325,9 +318,9 @@ public class MainScript : MonoBehaviour
             interactableObjects[i] = Instantiate(prefab).GetComponent<InteractableObject>();
             InteractableObject obj = interactableObjects[i];
             obj.transform.parent = container.transform;
-            obj.SetActions(() => TriggerEnterAction(obj.gameObject), 
+            obj.SetActions(() => TriggerEnterAction(obj.gameObject),
                             () => TriggerExitAction(obj.gameObject));
-            
+
         }
     }
 
@@ -340,21 +333,21 @@ public class MainScript : MonoBehaviour
             enemyMoney += Constants.PROFIT_FROM_HARVESTING_LENTIL * numberOfPlantsLeft;
             playerMoney += moneyInBank;
         }
-        
+
         // This must be here, so resetting the variables does not mess up the calculations
         UpdateGridsForNewDay();
-        
+
         string dayStartText = GetDayStartText();
         energyUtilsCost = 0;
         moneyInBank = 0;
-        
 
-        if (GetPlayerMoneyProportion() >= Constants.MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER 
+
+        if (GetPlayerMoneyProportion() >= Constants.MONEY_PROPORTION_NEEDED_TO_SEE_GREEN_NEWSPAPER
             && greenOptionsChosen == greenOptionsNeeded)
         {
             greenNewspaper.SetActions(() => TriggerEnterAction(greenNewspaperObject),
                                         () => TriggerExitAction(greenNewspaperObject));
-            
+
             greenNewspaperObject.SetActive(true);
         } else if (enemyMoney <= 0)
         {
@@ -374,7 +367,7 @@ public class MainScript : MonoBehaviour
                     if (dayNumber == 3) text = Constants.DAY_3_TEXT;
                     SetLargeTextCanvasActive(true);
                     largeText.text = text;
-                    
+
                     SetOnButtonAction1(() =>
                     {
                         SetLargeTextCanvasActive(true);
@@ -394,10 +387,10 @@ public class MainScript : MonoBehaviour
             {
                 NewDayButtonAction();
             }
-            
+
             dayNumber++;
         }
-        
+
 
     }
 
@@ -407,12 +400,12 @@ public class MainScript : MonoBehaviour
         {
             if (interactableObject != null) Destroy(interactableObject.gameObject);
         }
-        
+
         foreach (InteractableObject interactableObject in plants)
         {
             if (interactableObject != null) Destroy(interactableObject.gameObject);
         }
-        
+
         InstantiateGrids();
     }
 
@@ -424,8 +417,8 @@ public class MainScript : MonoBehaviour
         enemy.transform.position = enemyStartingPosition;
         player.SetPosition(playerStartPosition);
     }
-    
-    
+
+
     private void PutIntoGrids()
     {
         PutIntoGrid(cows, 30f, 30f, cowYOffBy);
@@ -437,11 +430,11 @@ public class MainScript : MonoBehaviour
         InteractableObject interactableObject = interactableObjects[0];
         int rows = (int) Math.Sqrt(interactableObjects.Length);
         int columns = (int) Math.Ceiling(interactableObjects.Length / (double) rows);
-        Grid grid = new Grid(new Dimension(xStartEdge, zStartEdge, interactableObject.GetXSize() * columns * 2, 
+        Grid grid = new Grid(new Dimension(xStartEdge, zStartEdge, interactableObject.GetXSize() * columns * 2,
                         interactableObject.GetZSize() * rows * 2), rows, columns);
         grid.TurnIntoGrid(interactableObjects, interactableObject.GetXSize(), interactableObject.GetZSize(), land.GetYBeginningEdge() + yOffBy);
     }
-    
+
     // Technology
     private void DiscoverGeothermal()
     {
@@ -479,15 +472,15 @@ public class MainScript : MonoBehaviour
             playerMoney -= Constants.GEOTHERMAL_ENERGY_COST;
             greenOptionsChosen++;
         });
-        
+
         SetOnButtonAction2(() =>
         {
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
         });
-        
+
     }
-    
+
     private void DiscoverEnergyProvider()
     {
         SetLargeTextCanvasActive(true);
@@ -502,7 +495,7 @@ public class MainScript : MonoBehaviour
             greenOptionsChosen++;
             energyCostMultiplier = Constants.TREE_HUGGER_ENERGY_PROVIDER_COST_MULTIPLIER;
         });
-        
+
         SetOnButtonAction2(() =>
         {
             SetLargeTextCanvasActive(false);
@@ -529,7 +522,7 @@ public class MainScript : MonoBehaviour
 
         });
     }
-    
+
     // Harvesting
     public void StealCow(GameObject cow)
     {
@@ -547,7 +540,7 @@ public class MainScript : MonoBehaviour
         SetPopupActive(false);
         numberOfPlantsLeft--;
     }
-    
+
     private void TriggerEnterAction(GameObject gameObject)
     {
         if (largeTextIsActive || gameObject == null) return;
@@ -589,7 +582,7 @@ public class MainScript : MonoBehaviour
         Destroy(gameObject);
         TriggerExitAction(gameObject);
     }
-    
+
     // On Actions
     public void OnButtonAction1(InputAction.CallbackContext context)
     {
@@ -600,7 +593,7 @@ public class MainScript : MonoBehaviour
     {
         grabButtonWasPressed = context.action.triggered;
     }
-    
+
     public void OnButtonAction2(InputAction.CallbackContext context)
     {
         buttonBWasPressed = context.action.triggered;
@@ -619,29 +612,29 @@ public class MainScript : MonoBehaviour
     {
         SetPopupActive(false);
         SetLargeTextCanvasActive(false);
-            
+
         playerMoney = Constants.PLAYER_START_MONEY;
         enemyMoney = Constants.ENEMY_START_MONEY;
-            
+
         energyCostMultiplier = 1;
         houseEnergyEfficiency = 1;
         lightsEnergyEfficiency = 1;
         moneyInBank = 0;
         dayNumber = 1;
         greenOptionsChosen = 0;
-            
+
         canCallRestartGame = true;
         hasCollectedGreenNewspaper = false;
-            
+
         geothermalNewspaperObject.SetActive(true);
         energyProviderNewspaperObject.SetActive(true);
         securityCameraObject.SetActive(true);
-            
+
         DisableInteractableObject(greenNewspaper);
         SetObjectActions();
         greenNewspaper.SetActions(null, null);
         enemyHouse.SetActions(null, null);
-            
+
         player.transform.position = playerStartPosition;
         BeginNewDay(false, true);
     }
@@ -652,7 +645,7 @@ public class MainScript : MonoBehaviour
         {
             SetEnemyShootTime(timeBeforeShooting);
         }
-        
+
         largeTextCanvas.SetActive(isActive);
         popup.SetActive(false);
         largeTextIsActive = isActive;
@@ -678,7 +671,7 @@ public class MainScript : MonoBehaviour
     {
         onButtonAction1 = action;
     }
-    
+
     private void SetOnButtonAction2(Action action)
     {
         onButtonAction2 = action;
@@ -695,7 +688,7 @@ public class MainScript : MonoBehaviour
         {
             SetLargeTextCanvasActive(true);
             largeText.text = Constants.GOT_SHOT_TEXT + GetDayEndNumbersText(true);
-            
+
             numberOfCowsLeft = cows.Length;
             numberOfPlantsLeft = plants.Length;
 
@@ -704,7 +697,7 @@ public class MainScript : MonoBehaviour
                 BeginNewDay(true, false);
                 SetLargeTextCanvasActive(false);
             });
-            
+
         }
         Destroy(bullet);
     }
@@ -714,9 +707,9 @@ public class MainScript : MonoBehaviour
         if (enemyMoney <= 0)
         {
         }
-        
+
         enemyMoney = Math.Max(0, enemyMoney);  // To prevent enemy money from being negative
-        
+
         return playerMoney / (playerMoney + enemyMoney);
     }
 
@@ -727,12 +720,12 @@ public class MainScript : MonoBehaviour
         SetPopupActive(false);
         largeText.text = Constants.GREEN_NEWSPAPER_TEXT;
         SetLargeTextCanvasActive(true);
-        
+
         SetOnButtonAction1(() =>
         {
             SetLargeTextCanvasActive(false);
             SetPopupActive(popupIsActive);
-            enemyHouse.SetActions(() => TriggerEnterAction(enemyHouseObject), 
+            enemyHouse.SetActions(() => TriggerEnterAction(enemyHouseObject),
                 () => TriggerExitAction(enemyHouseObject));
         });
     }
@@ -754,15 +747,14 @@ public class MainScript : MonoBehaviour
 
     private void SetHUDActive(bool isActive)
     {
-        // piggyBankCanvas.gameObject.SetActive(isActive);
-        // enemyShootingUICanvas.gameObject.SetActive(isActive);
-        // moneyProportionCanvas.SetActive(isActive);
+        piggyBankCanvas.gameObject.SetActive(isActive);
+        enemyShootingUICanvas.gameObject.SetActive(isActive);
+        moneyProportionCanvas.SetActive(isActive);
     }
-    
+
     // UI Code
     private void RunHUDLogic()
     {
-        return;
         float timeRemaining = Math.Max(timeWhenEnemyShoots - Time.time, 0f);
         float enemyShootTimeProportion = 1 - (timeRemaining / totalEnemyShootTime);
 
