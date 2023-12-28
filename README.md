@@ -10,3 +10,6 @@ get the true ending is to choose technology that helps the environment and by on
 will see the player's good energy choices and will follow suit. This is a simplistic version of how life works. By having 
 good energy choices the individual may at first suffer, but in the long run the group will benefit. And when the group benefits,
 so do all the individuals. This repository is just the code for the project, but I did create original assets and scenes for the project.
+
+# Game Images
+![Panoramic View](documentation/Panoramic%20View.png)
